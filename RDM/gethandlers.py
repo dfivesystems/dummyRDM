@@ -195,7 +195,6 @@ def powercycles(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
 def supportedpids(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Returns an rdmpacket containing a list of supported pids
      for the given device"""
-     #BUG: Doesn't work ...
     sendpdu = rdmpacket.RDMpacket()
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid

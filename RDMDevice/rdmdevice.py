@@ -2,7 +2,7 @@ from uuid import uuid4
 import socket
 import struct
 
-from RDM import gethandlers, sethandlers, pids, nackcodes
+from RDM import gethandlers, sethandlers, pids, nackcodes, sensors
 
 from LLRP import llrp
 
@@ -27,6 +27,7 @@ class rdmdevice:
     devlabel = "Device ID"
     softwareverslabel = "0.01 Alpha"
     category = 0x7101
+    sensors = []
 
     currentpers = 0
     perslist = {

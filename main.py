@@ -6,7 +6,7 @@ import _thread
 #from RDMnet import rdmnet
 
 devicestore = dict()
-
+#TODO: Document everything correctly
 if __name__ == "__main__":
     llrpengine = llrp.dummyllrp()
     llrpengine.start()

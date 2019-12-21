@@ -6,7 +6,6 @@ from struct import unpack
 
 def oppollhandler(self, raw_data):
     """Takes an OpPollPacket and returns an OpPollReplyPacket"""
-    #TODO: Make ArtnetV4 Multi-port Compliant
     opcode = unpack('!H', raw_data[8:10])
     opcode = opcode[0] << 8
     packet = packets.ArtNetPollPacket()

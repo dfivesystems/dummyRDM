@@ -1,0 +1,28 @@
+RDMDevice:
+    Add Sensors
+    Add More Pids
+    Enable loading from template
+    Add Custom PIDS
+    Add Set capabilities
+
+ArtNet:
+    handlers:
+        add opcodes as appropriate
+        Make oppollhandler work with more than 4 ports (Art-Net v4)
+        Write DMX data to port buffer
+        Check TODdata works with greater than 200 devices
+
+    packets:
+        Add remaining opcodes
+        Implement V4 Serialise
+
+RDM:
+    Add many more PIDS
+    Add some set handlers
+
+RDMNet:
+    Just, start
+
+LLRP:
+    Rework everythign to new format
+    Let's just go from there    
