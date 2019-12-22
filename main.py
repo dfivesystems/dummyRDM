@@ -8,11 +8,10 @@ import _thread
 devicestore = dict()
 #TODO: Document everything correctly
 if __name__ == "__main__":
-    llrpengine = llrp.dummyllrp()
-    llrpengine.start()
-    artnetengine = artnet.dummyartnode("192.168.3.2/24", devicestore, 30)
+    artnetengine = artnet.dummyartnode("192.168.1.195/24", devicestore, 30)
     artnetengine.start()
     devicestore[0] = rdmdevice.rdmdevice()
+    devicestore[0].start()
     artnetengine.registerdevice(0, 0)
     while True:
         pass

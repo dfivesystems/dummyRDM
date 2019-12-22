@@ -1,7 +1,7 @@
 import struct
+import socket
 from threading import Thread
-from RDM import gethandlers, sethandlers, nackcodes
-from RDM import sethandlers
+from RDM import gethandlers, sethandlers, nackcodes, rdmpacket
 from LLRP import pdus
 from RDMNetCommon import vectors
 
@@ -11,46 +11,12 @@ llrp_target_timeout = 500
 llrp_multicast_v4_request = '239.255.250.133'
 llrp_multicast_v4_response = '239.255.250.134'
 
-class dummyllrp(Thread):
-    """Provides an LLRP Handler for a set of DummyRDMdevices"""
-    """    # Sockets
-    llrpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-
-    # ACN Parameters
-    ACNheader = b'\x41\x53\x43\x2d\x45\x31\x2e\x31\x37\x00\x00\x00'
-
-    llrp_broadcast_cid = b'\xFB\xAD\x82\x2C\xBD\x0C\x4D\x4C\xBD\xC8\x7E\xAB\xEB\xC8\x5A\xFF'
-
-    def rundevice(self):
-        self.llrpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        self.llrpsocket.bind(("0.0.0.0", llrp.llrpport))
-        mreq = struct.pack("4sl", socket.inet_aton(llrp.llrp_multicast_v4_request), socket.INADDR_ANY)
-        self.llrpsocket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-
-        print("LLRP Listening")
-        while True:
-            data, addr = self.llrpsocket.recvfrom(1024)
-            llrp.handlellrp(self, data)"""
-    def __init__(self):
-        super().__init__()
-        pass
-
-    def run(self):
-        pass
-
-class LLRPRequestPDU:
-    def __init__(self):
-        self.senderCID = None
-        self.lowerUID = None
-        self.upperUID = None
-        self.filter = None
-        self.knownUIDs = []
-
+llrp_broadcast_cid = b'\xFB\xAD\x82\x2C\xBD\x0C\x4D\x4C\xBD\xC8\x7E\xAB\xEB\xC8\x5A\xFF'
 
 def handlellrp(self, rawdata):
     # Check for ACN Header
     print("LLRP Handler")
-    if rawdata[4:16] != self.ACNheader:
+    if rawdata[4:16] != vectors.ACNheader:
         print("Invalid ACN Header")
         return None
     # Check for LLRP Root Vector
@@ -78,9 +44,8 @@ def handlellrp(self, rawdata):
         return None
     return
 
-
 def handlellrprequest(self, pdu):
-    request = LLRPRequestPDU()
+    request = pdus.LLRPRequestPDU()
     request.senderCID = pdu[23:39]
     request.lowerUID = pdu[70:76]
     request.upperUID = pdu[76:82]
@@ -91,11 +56,12 @@ def handlellrprequest(self, pdu):
     if request.knownUIDs.__contains__(self.uid):
         return None
     # Respond to Request
+    #TODO: Make this class based for tidyness
     data = bytearray(b'\x00\x10\x00\x00')
-    data.extend(self.ACNheader)
+    data.extend(vectors.ACNheader)
     data.extend(b'\xF0\x00\x43')
     data.extend(vectors.vector_root_llrp)
-    data.extend(self.cid.bytes)
+    data.extend(self.cid)
     data.extend(b'\xF0\x00\x2c')
     data.extend(b'\x00\x00\x00\x02')
     data.extend(request.senderCID)
@@ -109,8 +75,9 @@ def handlellrprequest(self, pdu):
 
 
 def handlerdm(self, pdu):
+    #TODO: make work with new format RDM Handlers
     # Check cid is ours
-    if pdu[46:62] != self.cid.bytes:
+    if pdu[46:62] != self.cid:
         print("Incorrect CID - ignoring")
         return None
     # Check UID is ours
@@ -120,73 +87,77 @@ def handlerdm(self, pdu):
     # Check Checksum
     # TODO: Add Checksum Check
     # Process the packet
+    #Now we know it's ours, make an RDM packet for the source
+    srcpacket = rdmpacket.RDMpacket()
+    srcpacket.fromart(pdu[70:])
     pid = struct.unpack('!H', pdu[90: 92])[0]
     commandclass = pdu[89]
     if pid not in self.llrppidlist:
         print("PID not in device llrppidlist")
-        rdmpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, pdu)
-        pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+        returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, srcpacket)
+        pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
         self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         return
     if commandclass == 0x20:
+        #TODO: Make this behave similarly to artnet PID handlers
         if pid == 0x0060:
-            rdmpacket = gethandlers.devinfo(self, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.devinfo(self, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         elif pid == 0x0081:
-            rdmpacket = gethandlers.devmanufacturer(self, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.devmanufacturer(self, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         elif pid == 0x0080:
-            rdmpacket = gethandlers.devmodel(self, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.devmodel(self, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x7FEF:
-            rdmpacket = gethandlers.devscope(self, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+        elif pid == 0x0800:
+            returnpacket = gethandlers.devscope(self, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         elif pid == 0x1001:
             # NACK get of device reset
-            rdmpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         elif pid == 0x0090:
             # NACK get of factory reset
-            rdmpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         elif pid == 0x0082:
-            rdmpacket = gethandlers.devlabel(self, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.devlabel(self, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         elif pid == 0x1000:
             print("PID: Identify Device")
             # TODO: Return Status
-        elif pid == 0x7FE0:
-            rdmpacket = gethandlers.devsearch(self, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+        elif pid == 0x0801:
+            returnpacket = gethandlers.devsearch(self, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         else:
             print("Non-recognised PID (LLRP, GET)")
-            rdmpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
     elif commandclass == 0x30:
         print("Set Command")
         if pid == 0x0060:
             print("PID: Device Info")
-            rdmpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         elif pid == 0x0081:
             print("PID: Device Manufacturer")
-            rdmpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         elif pid == 0x0080:
             print("PID: Device Model")
-            rdmpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
         elif pid == 0x7FEF:
             print("PID: Device Scope")
@@ -202,7 +173,7 @@ def handlerdm(self, pdu):
             print("PID: Search Domain")
         else:
             print("Non-recognised PID (LLRP, SET)")
-            rdmpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, pdu)
-            pdu = pdus.llrp_rpt_pdu(self, rdmpacket, pdu)
+            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, srcpacket)
+            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
             self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
     return None

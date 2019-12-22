@@ -71,5 +71,7 @@ class RDMpacket:
         retval.extend(self.pid.to_bytes(2, 'big'))
         retval.extend(self.pdl.to_bytes(1, 'big'))
         retval.extend(self.pd)
-        calc = sum(retval)
+        calc = 0x00
+        for byte in retval:
+            calc = calc + byte
         self.checksum = calc

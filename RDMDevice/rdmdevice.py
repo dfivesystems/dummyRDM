@@ -1,18 +1,18 @@
 from uuid import uuid4
+from threading import Thread
 import socket
 import struct
-
 from RDM import gethandlers, sethandlers, pids, nackcodes, sensors
-
 from LLRP import llrp
 
 
-class rdmdevice:
+class rdmdevice(Thread):
     """Creates a dummy RDM device
 
     This class creates a dummy RDM fixture with it's own UID, CID, PIDs. 
     This is designed to be used in conjunction with the DummyArtRDM and 
-    DummyRDMNet classes to function as a set of test devices.
+    DummyRDMNet classes to function as a set of test devices. The LLRP
+    responder is built into the rdmdevice class
 
     """
 
@@ -77,14 +77,24 @@ class rdmdevice:
             pids.RDM_lamp_strikes: gethandlers.lampstrikes,
             pids.RDM_device_power_cycles: gethandlers.powercycles,
             pids.RDM_supported_parameters: gethandlers.supportedpids,
+
             # pids.RDM_identify: None,#Identify
     }
 
-    def __init__(self): 
-        """Initialise the device with optional arguments if required"""
+    def __init__(self):
+        super().__init__()
+        self.llrpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self.llrpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.llrpsocket.bind(("0.0.0.0", llrp.llrpport))
+        mreq = struct.pack("4sl", socket.inet_aton(llrp.llrp_multicast_v4_request), socket.INADDR_ANY)
+        self.llrpsocket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
-        #At Some point this will allow for creation of a device from a JSON file
-        pass
+        print("LLRP Listening")
+
+    def run(self):
+        while True:
+            data, addr = self.llrpsocket.recvfrom(1024)
+            llrp.handlellrp(self, data)
 
     def getpid(self, pid, recpdu):
         func = self.getswitcher.get(pid, "NACK")

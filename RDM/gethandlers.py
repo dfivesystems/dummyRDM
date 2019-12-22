@@ -8,7 +8,7 @@ def devinfo(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -45,7 +45,7 @@ def devsoftwareversion(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -62,7 +62,7 @@ def devmanufacturer(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -80,7 +80,7 @@ def devmodel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -97,7 +97,7 @@ def devlabel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -114,7 +114,7 @@ def dmxaddress(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -131,7 +131,7 @@ def devhours(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -148,7 +148,7 @@ def lamphours(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -165,7 +165,7 @@ def lampstrikes(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -182,7 +182,7 @@ def powercycles(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -199,7 +199,7 @@ def supportedpids(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
-    sendpdu.port_resp = 0x21
+    sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
@@ -216,36 +216,40 @@ def supportedpids(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
 
 
 def devscope(self, pdu):
-    print("Get Device Scope")
-    length = 24 + len(self.scope)
-    data = bytearray(b'\xcc\x01')
-    data.extend(length.to_bytes(1, 'big'))
-    data.extend(pdu[78:84])
-    data.extend(self.uid)
-    data.extend(b'\x00\x00\x00\x00\x00')
-    data.extend(b'\x21')
-    data.extend(b'\x7F\xEF')
-    data.extend(bytes([len(self.scope)+2]))
-    data.extend(b'\x00\x00')
-    data.extend(bytes(self.scope, 'utf-8'))
-    data = checksums.rdmCheckSum(data)
-    return data
+    """Return an RDM packet for device scope """
+    sendpdu = rdmpacket.RDMpacket()
+    sendpdu.destuid = pdu.srcuid
+    sendpdu.srcuid = self.uid
+    sendpdu.tn = pdu.tn
+    sendpdu.port_resp = 0x00
+    sendpdu.mess_cnt = 0x00
+    sendpdu.sub_id = 0x0000
+    sendpdu.cc = 0x21
+    sendpdu.pid = 0x0800 
+    sendpdu.pdl = 34
+    sendpdu.pd = bytearray(b'\x00\x00')
+    sendpdu.pd.extend(bytes('{:<32}'.format(self.scope), 'utf8'))
+    sendpdu.length = 24+sendpdu.pdl
+    sendpdu.calcchecksum()
+    return sendpdu
 
 
 def devsearch(self, pdu):
-    print("Get Device Search Domain")
-    length = 24 + len(self.searchdomain)
-    data = bytearray(b'\xcc\x01')
-    data.extend(length.to_bytes(1, 'big'))
-    data.extend(pdu[78:84])
-    data.extend(self.uid)
-    data.extend(b'\x00\x00\x00\x00\x00')
-    data.extend(b'\x21')
-    data.extend(b'\x7F\xE0')
-    data.extend(bytes([len(self.searchdomain)]))
-    data.extend(bytes(self.searchdomain, 'utf-8'))
-    data = checksums.rdmCheckSum(data)
-    return data
+    """Return an RDM packet for device scope """
+    sendpdu = rdmpacket.RDMpacket()
+    sendpdu.destuid = pdu.srcuid
+    sendpdu.srcuid = self.uid
+    sendpdu.tn = pdu.tn
+    sendpdu.port_resp = 0x00
+    sendpdu.mess_cnt = 0x00
+    sendpdu.sub_id = 0x0000
+    sendpdu.cc = 0x21
+    sendpdu.pid = 0x0801
+    sendpdu.pdl = 32
+    sendpdu.pd = (bytes('{:<32}'.format(self.searchdomain), 'utf8'))
+    sendpdu.length = 24+sendpdu.pdl
+    sendpdu.calcchecksum()
+    return sendpdu
 
 def nackreturn(self,pid, reasoncode, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     print("Nacking PID %x" % pid)
