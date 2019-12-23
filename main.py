@@ -8,7 +8,7 @@ import _thread
 devicestore = dict()
 #TODO: Document everything correctly
 if __name__ == "__main__":
-    artnetengine = artnet.dummyartnode("192.168.1.195/24", devicestore, 30)
+    artnetengine = artnet.dummyartnode("192.168.1.195/24", devicestore, 0, 14)
     artnetengine.start()
     devicestore[0] = rdmdevice.rdmdevice()
     devicestore[0].start()

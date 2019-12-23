@@ -3,6 +3,7 @@ from ArtNet import opcodes
 from RDM import rdmpacket
 
 #TODO: Add remaining relevant opcodes
+#TODO: Change serialise() methods to use all class data
 class ArtNetDataPacket:
     def __init__(self):
         self.opcode = None
@@ -89,51 +90,10 @@ class ArtNetPollReplyPacket:
         tosend.extend(self.SwIn)
         tosend.extend(self.SwOut)
         tosend.extend(b'\x00'*6)
-        tosend.append(self.Style)
+        tosend.extend(self.Style.to_bytes(1, 'big'))
         tosend.extend(self.Mac)
         tosend.extend(self.BindIp.packed)
-        tosend.append(self.BindIndex)
-        tosend.extend(b'\x00'*27)
-        return tosend
-        
-    def serialisev4(self, portid) -> bytearray:
-        """Returns a ByteArray object for sending over the network, 
-        suitable for working with Art-Net V4 compliant devices that 
-        have more than 4 ports """
-
-#TODO: Implement
-        tosend = bytearray()
-        tosend.extend(b'Art-Net\x00')
-        tosend.append(0x00)
-        tosend.append(0x21)
-        tosend.extend(self.ipaddr.packed)
-        tosend.append(0x19)
-        tosend.append(0x36)
-        tosend.append(0x01)
-        tosend.append(0x01)
-        tosend.append(0x00)#NetSw
-        tosend.append(0x00)#SubSw
-        tosend.append(0x29)#ManHi
-        tosend.append(0x86)#ManLo
-        tosend.append(0x00)#UBEA
-        tosend.append(0x00)#Status1
-        tosend.append(0x7f)#ESTA Hi
-        tosend.append(0xf0)#ESTA Lo
-        tosend.extend(bytes('{:<18}'.format(self.Shortname), 'utf8'))
-        tosend.extend(bytes('{:<64}'.format(self.Longname), 'utf8'))
-        tosend.extend(bytes('{:<64}'.format(self.NodeReport), 'utf8'))
-        tosend.append(self.NumportsHi)
-        tosend.append(self.NumportsLo)
-        tosend.extend(self.PortTypes)
-        tosend.extend(self.GoodInput)
-        tosend.extend(self.GoodOutput)
-        tosend.extend(self.SwIn)
-        tosend.extend(self.SwOut)
-        tosend.extend(b'\x00'*6)
-        tosend.append(self.Style)
-        tosend.extend(self.Mac)
-        tosend.extend(self.BindIp.packed)
-        tosend.append(self.BindIndex)
+        tosend.extend(self.BindIndex.to_bytes(1, 'big'))
         tosend.extend(b'\x00'*27)
         return tosend
 
