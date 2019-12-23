@@ -57,6 +57,8 @@ class RDMpacket:
         return 
 
     def calcchecksum(self):
+        """ Calculates and appends the checksum of the RDM packet """
+
         retval = bytearray()
         retval.extend(self.startcode.to_bytes(1, 'big'))
         retval.extend(self.ssc.to_bytes(1, 'big'))
@@ -75,3 +77,34 @@ class RDMpacket:
         for byte in retval:
             calc = calc + byte
         self.checksum = calc
+
+    def checkchecksum(self) -> bool:
+        """Checks the checksum of a received RDM Packet 
+        
+        Returns:
+            correct: A bool of whether the checksum is correct or not
+        """
+        retval = bytearray()
+        retval.extend(self.startcode.to_bytes(1, 'big'))
+        retval.extend(self.ssc.to_bytes(1, 'big'))
+        retval.extend(self.length.to_bytes(1, 'big'))
+        retval.extend(self.destuid)
+        retval.extend(self.srcuid)
+        retval.extend(self.tn.to_bytes(1, 'big'))
+        retval.extend(self.port_resp.to_bytes(1, 'big'))
+        retval.extend(self.mess_cnt.to_bytes(1, 'big'))
+        retval.extend(self.sub_id.to_bytes(2, 'big'))
+        retval.extend(self.cc.to_bytes(1, 'big'))
+        retval.extend(self.pid.to_bytes(2, 'big'))
+        retval.extend(self.pdl.to_bytes(1, 'big'))
+        retval.extend(self.pd)
+        calc = 0x00
+        for byte in retval:
+            calc = calc + byte
+        
+        if calc == self.checksum:
+            return True
+        else:
+            print("RDM Checksum Failed, PID:{:04x} Calc'ed Checksum: {} Sent Checksum {}".format(self.pid, calc, self.checksum))
+            return False
+        

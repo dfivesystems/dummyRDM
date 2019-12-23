@@ -83,6 +83,8 @@ def opRdmHandler(self, raw_data):
     packet.command = raw_data[22]
     packet.address = raw_data[23]
     packet.rdmpd.fromart(raw_data[24:-1])
+    if not packet.rdmpd.checkchecksum():
+        return None
     for x in self.devicestore:
         if self.devicestore[x].uid == packet.rdmpd.destuid:
             #Process the PID

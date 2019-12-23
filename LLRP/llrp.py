@@ -75,7 +75,6 @@ def handlellrprequest(self, pdu):
 
 
 def handlerdm(self, pdu):
-    #TODO: make work with new format RDM Handlers
     # Check cid is ours
     if pdu[46:62] != self.cid:
         print("Incorrect CID - ignoring")
@@ -84,12 +83,12 @@ def handlerdm(self, pdu):
     if pdu[72:78] != self.uid:
         print("Incorrect UID - ignoring")
         return None
-    # Check Checksum
-    # TODO: Add Checksum Check
     # Process the packet
     #Now we know it's ours, make an RDM packet for the source
     srcpacket = rdmpacket.RDMpacket()
     srcpacket.fromart(pdu[70:])
+    if not srcpacket.checkchecksum():
+        return None
     pid = struct.unpack('!H', pdu[90: 92])[0]
     commandclass = pdu[89]
     if pid not in self.llrppidlist:
