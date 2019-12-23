@@ -3,7 +3,6 @@ from ArtNet import opcodes
 from RDM import rdmpacket
 
 #TODO: Add remaining relevant opcodes
-#TODO: Change serialise() methods to use all class data
 class ArtNetDataPacket:
     def __init__(self):
         self.opcode = None
@@ -64,21 +63,16 @@ class ArtNetPollReplyPacket:
 
         tosend = bytearray()
         tosend.extend(b'Art-Net\x00')
-        tosend.append(0x00)
-        tosend.append(0x21)
+        tosend.extend(self.opcode.to_bytes(2, 'little'))
         tosend.extend(self.ipaddr.packed)
-        tosend.append(0x19)
-        tosend.append(0x36)
-        tosend.append(0x01)
-        tosend.append(0x01)
+        tosend.extend(self.port.to_bytes(2, 'big'))
+        tosend.extend(self.ver.to_bytes(2, 'big'))
         tosend.append(self.NetSw)#NetSw
         tosend.append(self.SubSw)#SubSw
-        tosend.append(0x29)#ManHi
-        tosend.append(0x86)#ManLo
-        tosend.append(0x00)#UBEA
-        tosend.append(0x00)#Status1
-        tosend.append(0x7f)#ESTA Hi
-        tosend.append(0xf0)#ESTA Lo
+        tosend.extend(self.Oem.to_bytes(2, 'big'))
+        tosend.extend(self.UBEA.to_bytes(1, 'big'))#UBEA
+        tosend.extend(self.Status1.to_bytes(1, 'big'))
+        tosend.extend(self.EstaMan.to_bytes(2, 'big'))
         tosend.extend(bytes('{:<18}'.format(self.Shortname), 'utf8'))
         tosend.extend(bytes('{:<64}'.format(self.Longname), 'utf8'))
         tosend.extend(bytes('{:<64}'.format(self.NodeReport), 'utf8'))
@@ -122,7 +116,7 @@ class ArtTodDataPacket:
         self.Net = 0x00
         self.CommandResponse = 0x00
         self.Address = 0x00
-        self.uidtotal = 0x00
+        self.uidtotal = 0x0000
         self.blockcount = 0x00
         self.uidcount = 0x00
         self.tod = list()
@@ -132,21 +126,18 @@ class ArtTodDataPacket:
         
         tosend = bytearray()
         tosend.extend(b'Art-Net\x00')
-        tosend.append(0x00)
-        tosend.append(0x81)
-        tosend.append(0x01)
-        tosend.append(0x01)
-        tosend.append(0x01)
-        tosend.append(self.port+1)
+        tosend.extend(self.opcode.to_bytes(2, 'little'))
+        tosend.extend(self.ver.to_bytes(2, 'big'))
+        tosend.extend(self.rdmver.to_bytes(1, 'big'))
+        tosend.extend((self.port+1).to_bytes(1, 'big'))
         tosend.extend(b'\x00'*6)
-        tosend.append(self.BindIndex)
-        tosend.append(self.Net)
-        tosend.append(self.CommandResponse)
-        tosend.append(self.Address)
-        tosend.append(0x00)#UID TOTAL HI
-        tosend.append(self.uidtotal)
-        tosend.append(self.blockcount)
-        tosend.append(self.uidcount)
+        tosend.extend(self.BindIndex.to_bytes(1, 'big'))
+        tosend.extend(self.Net.to_bytes(1, 'big'))
+        tosend.extend(self.CommandResponse.to_bytes(1, 'big'))
+        tosend.extend(self.Address.to_bytes(1, 'big'))
+        tosend.extend(self.uidtotal.to_bytes(2, 'big'))
+        tosend.extend(self.blockcount.to_bytes(1, 'big'))
+        tosend.extend(self.uidcount.to_bytes(1, 'big'))
         for todentry in self.tod:
             tosend.extend(todentry)
         return tosend
@@ -168,15 +159,13 @@ class ArtRDMPacket:
     def serialise(self) -> bytearray:
         tosend = bytearray()
         tosend.extend(b'Art-Net\x00')
-        tosend.append(0x00)
-        tosend.append(0x83)
-        tosend.append(0x01)
-        tosend.append(0x01)
-        tosend.append(self.rdmver)
+        tosend.extend(self.opcode.to_bytes(2, 'little'))
+        tosend.extend(self.ver.to_bytes(2, 'big'))
+        tosend.extend(self.rdmver.to_bytes(1, 'big'))
         tosend.extend(b'\x00' * 8)
-        tosend.append(self.net)
-        tosend.append(self.command)
-        tosend.append(self.address)
+        tosend.extend(self.net.to_bytes(1, 'big'))
+        tosend.extend(self.command.to_bytes(1, 'big'))
+        tosend.extend(self.address.to_bytes(1, 'big'))
         tosend.extend(self.rdmpd.artserialise())
         
         return tosend

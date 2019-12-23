@@ -6,7 +6,8 @@ from threading import Thread
 from ArtNet import opcodes, packets, handlers, ports
 
 class dummyartnode(Thread):
-    
+    """Class Implementing an Art-Net Node, capable of emulating devices on a single port"""
+
     HOST = None
     ArtNetPort = 6454
     startuniverse = 0
@@ -15,9 +16,7 @@ class dummyartnode(Thread):
     portcount = 0
     artnetsocket = None
     artnetunicastsocket = None
-    ports = dict()
-
-    """Class Implementing an Art-Net Node, capable of emulating devices on a single port"""
+    ports = dict() 
 
     def __init__(self, hostaddress: str, devicestore: dict, startuniverse: int = 0, portcount: int = 4): 
         """Initialise the Art-Net Node with a hostaddress(CIDR notation), startuniverse(optional) and port count(optional)"""
