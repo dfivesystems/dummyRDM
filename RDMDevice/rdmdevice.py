@@ -53,6 +53,8 @@ class rdmdevice(Thread):
 
     # These dicts contains lists of device supported PIDS
     pidlist = [0x0060, 0x00c0, 0x00F0, 0x1000, ]
+    """llrppidlist should contain pids that are supported by LLRP
+     and Artnet/E133, check E133 table 5-5 for examples"""
     llrppidlist = {
         pids.RDM_device_info: "Device Info",
         pids.RDM_manufacturer_label: "Device Manufacturer",
@@ -71,7 +73,7 @@ class rdmdevice(Thread):
             pids.RDM_manufacturer_label: gethandlers.devmanufacturer,
             pids.RDM_device_model_description: gethandlers.devmodel,
             pids.RDM_device_label: gethandlers.devlabel,
-            pids.RDM_dmx_start_address: gethandlers.dmxaddress,#DMX Start Address
+            pids.RDM_dmx_start_address: gethandlers.dmxaddress,
             pids.RDM_device_hours: gethandlers.devhours,
             pids.RDM_lamp_hours: gethandlers.lamphours,
             pids.RDM_lamp_strikes: gethandlers.lampstrikes,
