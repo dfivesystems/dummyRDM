@@ -10,7 +10,6 @@ def oppollhandler(self, raw_data):
     opcode = opcode[0] << 8
     packet = packets.ArtNetPollPacket()
     packet.opcode = opcode
-    #TODO: Add More relevant data and implement Art-Net V4 compliant replies
     if self.portcount <= 4:
         returnpacket = packets.ArtNetPollReplyPacket()
         returnpacket.ipaddr = self.HOST.ip
@@ -22,7 +21,21 @@ def oppollhandler(self, raw_data):
             returnpacket.SwOut[x] = self.ports[x].universe 
         return returnpacket
     else:
-        pass
+        for x in range(self.portcount):
+            returnpacket = packets.ArtNetPollReplyPacket()
+            returnpacket.ipaddr = self.HOST.ip
+            returnpacket.NumportsLo = 0x01
+            returnpacket.NetSw = self.netsw
+            returnpacket.SubSw = self.subsw
+            returnpacket.SwIn[0] = self.ports[x].universe 
+            returnpacket.SwOut[0] = self.ports[x].universe
+            if(x>0):
+                returnpacket.BindIndex = x+1
+                returnpacket.BindIp = self.HOST.ip
+            try:
+                self.artnetsocket.sendto(returnpacket.serialise(), (self.HOST.network.broadcast_address.exploded, 6454))
+            except socket.error as e:
+                print("Socket error{0}".format(e))
 
 def oppollreplyhandler(self, raw_data):
     #TODO: maybe we build a table of nearby devices with this information

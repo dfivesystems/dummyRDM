@@ -15,7 +15,7 @@ llrp_broadcast_cid = b'\xFB\xAD\x82\x2C\xBD\x0C\x4D\x4C\xBD\xC8\x7E\xAB\xEB\xC8\
 
 def handlellrp(self, rawdata):
     # Check for ACN Header
-    print("LLRP Handler")
+    #print("LLRP Handler")
     if rawdata[4:16] != vectors.ACNheader:
         print("Invalid ACN Header")
         return None
@@ -26,16 +26,16 @@ def handlellrp(self, rawdata):
     # Check for LLRP PDU Vector
     if rawdata[45] == 1:
         # Probe Request
-        print("Probe Request")
+        #print("Probe Request")
         handlellrprequest(self, rawdata)
     elif rawdata[45] == 2:
         # Probe Reply
-        print("Probe Reply")
+        #print("Probe Reply")
         # As we're a device we shall do nothing with the probe reply
         return
     elif rawdata[45] == 3:
         # RDM Command
-        print("LLRP RDM command")
+        #print("LLRP RDM command")
         handlerdm(self, rawdata)
     else:
         # Invalid Vector

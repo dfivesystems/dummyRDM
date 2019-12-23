@@ -8,13 +8,11 @@ RDMDevice:
 ArtNet:
     handlers:
         add opcodes as appropriate
-        Make oppollhandler work with more than 4 ports (Art-Net v4)
         Write DMX data to port buffer
         Check TODdata works with greater than 200 devices
 
     packets:
         Add remaining opcodes
-        Implement V4 Serialise
 
 RDM:
     Add many more PIDS
