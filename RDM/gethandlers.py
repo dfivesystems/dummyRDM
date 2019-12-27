@@ -252,8 +252,8 @@ def devsearch(self, pdu):
     sendpdu.calcchecksum()
     return sendpdu
 
-def nackreturn(self,pid, reasoncode, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
-    print("Nacking PID %x" % pid)
+def nackreturn(self,recpdu: rdmpacket.RDMpacket, reasoncode) -> rdmpacket.RDMpacket:
+    print("Nacking PID {:04x}".format(recpdu.pid))
     sendpdu = rdmpacket.RDMpacket()
     sendpdu.length = 0x1a
     sendpdu.destuid = recpdu.srcuid
@@ -261,7 +261,7 @@ def nackreturn(self,pid, reasoncode, recpdu: rdmpacket.RDMpacket) -> rdmpacket.R
     sendpdu.tn = recpdu.tn
     sendpdu.port_resp = 0x02
     sendpdu.cc = 0x21
-    sendpdu.pid = pid
+    sendpdu.pid = recpdu.pid
     sendpdu.pdl = 0x02
     sendpdu.pd = reasoncode
     sendpdu.calcchecksum()

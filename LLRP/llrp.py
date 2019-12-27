@@ -96,7 +96,7 @@ def handlerdm(self, pdu):
         self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
     else:
         print("Device {} does not support PID:0x{:04x} on LLRP target".format(self.uid.hex(), srcpacket.pid))
-        returnpacket = gethandlers.nackreturn(self, srcpacket.pid, nackcodes.nack_unknown, srcpacket)
+        returnpacket = gethandlers.nackreturn(self, srcpacket, nackcodes.nack_unknown)
         pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
         self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
     return

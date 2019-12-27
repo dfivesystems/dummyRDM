@@ -101,7 +101,7 @@ class rdmdevice(Thread):
 
     def getpid(self, pid, recpdu):
         """Checks to see if either the LLRP PIDS or the RDM-only PIDS contains the
-        requested PID. If they do, a list of RDM PDUs is returned to the requesting
+        requested PID. If they do, an RDM PDU is returned to the requesting
         engine, to be sent out from there"""
         func = self.llrpswitcher.get(pid, "NACK")  
         if func is "NACK":
@@ -109,5 +109,5 @@ class rdmdevice(Thread):
         if func is not "NACK":
             return func(self, recpdu)
         else:
-            return gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, recpdu)
+            return gethandlers.nackreturn(self, recpdu, nackcodes.nack_unknown)
        
