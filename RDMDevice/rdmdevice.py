@@ -2,7 +2,7 @@ from uuid import uuid4
 from threading import Thread, Timer
 import socket
 import struct
-from RDM import gethandlers, pids, nackcodes, sensors
+from RDM import gethandlers, pids, nackcodes, sensors, rdmpacket, defines
 from LLRP import llrp
 
 
@@ -27,7 +27,7 @@ class rdmdevice(Thread):
     devlabel = "Device ID"
     softwareverslabel = "0.01 Alpha"
     category = 0x7101
-    sensors = []
+    sensors = [sensors.dummysensor(), sensors.dummysensor(), sensors.dummysensor()]
 
     currentpers = 0
     perslist = {
@@ -99,10 +99,11 @@ class rdmdevice(Thread):
             data, addr = self.llrpsocket.recvfrom(1024)
             llrp.handlellrp(self, data)
 
-    def getpid(self, pid, recpdu):
+    def getpid(self, pid, recpdu) -> rdmpacket.RDMpacket:
         """Checks to see if either the LLRP PIDS or the RDM-only PIDS contains the
         requested PID. If they do, an RDM PDU is returned to the requesting
-        engine, to be sent out from there"""
+        engine, to be sent out from there. Used by Art-Net and RDMNet responders"""
+
         func = self.llrpswitcher.get(pid, "NACK")  
         if func is "NACK":
             func = self.getswitcher.get(pid, "NACK")

@@ -1,5 +1,6 @@
 from RDM import checksums, rdmpacket
 #TODO: Add CC Checks and implement Set method where appropriate
+#TODO: Check any PIDs that return strings return without padding spaced
 
 def devinfo(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Returns an device info rdmpacket for the given device
@@ -34,7 +35,7 @@ def devinfo(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     # Sub Device Count
     sendpdu.pd.extend(b'\x00\x00')
     # Sensor Count
-    sendpdu.pd.extend(b'\x00')  # TODO: Add Sensors
+    sendpdu.pd.extend(len(self.sensors).to_bytes(1, 'big'))  # TODO: Add Sensors
     sendpdu.calcchecksum()
     return sendpdu
 
