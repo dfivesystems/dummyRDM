@@ -1,4 +1,5 @@
 from RDM import checksums, rdmpacket
+#TODO: Add CC Checks and implement Set method where appropriate
 
 def devinfo(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Returns an device info rdmpacket for the given device

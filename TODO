@@ -22,5 +22,7 @@ RDMNet:
     Just, start
 
 LLRP:
-    Set Handlers
-    Make handlers work the same way as ArtNet   
+    Make llrp request handler class based
+
+Add web engine
+Documentation

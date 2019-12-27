@@ -89,90 +89,15 @@ def handlerdm(self, pdu):
     srcpacket.fromart(pdu[70:])
     if not srcpacket.checkchecksum():
         return None
-    pid = struct.unpack('!H', pdu[90: 92])[0]
-    commandclass = pdu[89]
-    if pid not in self.llrppidlist:
-        print("PID not in device llrppidlist")
-        returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, srcpacket)
+    func = self.llrpswitcher.get(srcpacket.pid, "NACK")  
+    if func is not "NACK":
+        returnpacket = func(self, srcpacket)
         pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
         self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        return
-    if commandclass == 0x20:
-        #TODO: Make this behave similarly to artnet PID handlers
-        if pid == 0x0060:
-            returnpacket = gethandlers.devinfo(self, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x0081:
-            returnpacket = gethandlers.devmanufacturer(self, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x0080:
-            returnpacket = gethandlers.devmodel(self, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x0800:
-            returnpacket = gethandlers.devscope(self, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x1001:
-            # NACK get of device reset
-            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x0090:
-            # NACK get of factory reset
-            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x0082:
-            returnpacket = gethandlers.devlabel(self, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x1000:
-            print("PID: Identify Device")
-            # TODO: Return Status
-        elif pid == 0x0801:
-            returnpacket = gethandlers.devsearch(self, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        else:
-            print("Non-recognised PID (LLRP, GET)")
-            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-    elif commandclass == 0x30:
-        print("Set Command")
-        if pid == 0x0060:
-            print("PID: Device Info")
-            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x0081:
-            print("PID: Device Manufacturer")
-            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x0080:
-            print("PID: Device Model")
-            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unsupported_cc, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-        elif pid == 0x7FEF:
-            print("PID: Device Scope")
-        elif pid == 0x1001:
-            print("PID: Device Reset")
-        elif pid == 0x0090:
-            print("PID: Factory Reset")
-        elif pid == 0x0082:
-            print("PID: Device Label")
-        elif pid == 0x1000:
-            print("PID: Identify Device")
-        elif pid == 0x7FE0:
-            print("PID: Search Domain")
-        else:
-            print("Non-recognised PID (LLRP, SET)")
-            returnpacket = gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, srcpacket)
-            pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-            self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
-    return None
+    else:
+        print("Device {} does not support PID:0x{:04x} on LLRP target".format(self.uid.hex(), srcpacket.pid))
+        returnpacket = gethandlers.nackreturn(self, srcpacket.pid, nackcodes.nack_unknown, srcpacket)
+        pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
+        self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
+    return
+

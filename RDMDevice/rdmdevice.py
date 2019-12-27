@@ -1,8 +1,8 @@
 from uuid import uuid4
-from threading import Thread
+from threading import Thread, Timer
 import socket
 import struct
-from RDM import gethandlers, sethandlers, pids, nackcodes, sensors
+from RDM import gethandlers, pids, nackcodes, sensors
 from LLRP import llrp
 
 
@@ -52,35 +52,36 @@ class rdmdevice(Thread):
     scope = "default"
 
     # These dicts contains lists of device supported PIDS
-    pidlist = [0x0060, 0x00c0, 0x00F0, 0x1000, ]
-    """llrppidlist should contain pids that are supported by LLRP
-     and Artnet/E133, check E133 table 5-5 for examples"""
-    llrppidlist = {
-        pids.RDM_device_info: "Device Info",
-        pids.RDM_manufacturer_label: "Device Manufacturer",
-        pids.RDM_device_model_description: "Device Model",
-        pids.E133_component_scope: "Scope",
-        pids.E133_search_domain: "Search Domain",
-        pids.RDM_reset_device: "Device Reset",
-        pids.RDM_factory_defaults: "Factory Reset",
-        pids.RDM_device_label: "Device Label",
-        pids.RDM_identify: "Identify",
+
+    #llrpswitcher contains PIDs that are supported by both LLRP and Art/RDMNet targets
+    llrpswitcher = {
+        pids.RDM_device_info: gethandlers.devinfo,
+        #Reset
+        #Factory Defaults
+        pids.RDM_device_label: gethandlers.devlabel,
+        pids.RDM_manufacturer_label: gethandlers.devmanufacturer,
+        pids.RDM_device_model_description: gethandlers.devmodel,
+        #Identify
+        #Lock State
+        #Lock State Description
+        #E133 component scope
+        #E133 search domain
+        #E133 tcp comms status
+        #E133 Broker Status
+        #E137-2 Messages as appropriate
     }
 
+    #getswitcher contains PIDs that are supported by ONLY Art/RDMNet targets
     getswitcher = {
-            pids.RDM_device_info: gethandlers.devinfo,
-            pids.RDM_software_version_label: gethandlers.devsoftwareversion,
-            pids.RDM_manufacturer_label: gethandlers.devmanufacturer,
-            pids.RDM_device_model_description: gethandlers.devmodel,
-            pids.RDM_device_label: gethandlers.devlabel,
-            pids.RDM_dmx_start_address: gethandlers.dmxaddress,
-            pids.RDM_device_hours: gethandlers.devhours,
-            pids.RDM_lamp_hours: gethandlers.lamphours,
-            pids.RDM_lamp_strikes: gethandlers.lampstrikes,
-            pids.RDM_device_power_cycles: gethandlers.powercycles,
-            pids.RDM_supported_parameters: gethandlers.supportedpids,
+        pids.RDM_software_version_label: gethandlers.devsoftwareversion,
+        pids.RDM_dmx_start_address: gethandlers.dmxaddress,
+        pids.RDM_device_hours: gethandlers.devhours,
+        pids.RDM_lamp_hours: gethandlers.lamphours,
+        pids.RDM_lamp_strikes: gethandlers.lampstrikes,
+        pids.RDM_device_power_cycles: gethandlers.powercycles,
+        pids.RDM_supported_parameters: gethandlers.supportedpids,
 
-            # pids.RDM_identify: None,#Identify
+        # pids.RDM_identify: None,#Identify
     }
 
     def __init__(self):
@@ -99,13 +100,14 @@ class rdmdevice(Thread):
             llrp.handlellrp(self, data)
 
     def getpid(self, pid, recpdu):
-        func = self.getswitcher.get(pid, "NACK")
+        """Checks to see if either the LLRP PIDS or the RDM-only PIDS contains the
+        requested PID. If they do, a list of RDM PDUs is returned to the requesting
+        engine, to be sent out from there"""
+        func = self.llrpswitcher.get(pid, "NACK")  
+        if func is "NACK":
+            func = self.getswitcher.get(pid, "NACK")
         if func is not "NACK":
             return func(self, recpdu)
         else:
             return gethandlers.nackreturn(self, pid, nackcodes.nack_unknown, recpdu)
-
        
-
-
-

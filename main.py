@@ -6,7 +6,6 @@ import _thread
 #from RDMnet import rdmnet
 
 devicestore = dict()
-#TODO: Document everything correctly
 if __name__ == "__main__":
     artnetengine = artnet.dummyartnode("192.168.1.195/24", devicestore, 0, 14)
     artnetengine.start()
