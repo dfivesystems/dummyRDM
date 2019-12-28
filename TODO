@@ -21,5 +21,8 @@ RDMNet:
 LLRP:
     Make llrp request handler class based
 
-Add web engine
+WebEngine:
+    Management handlers
+    Add/remove device
+    Save device as JSON
 Documentation

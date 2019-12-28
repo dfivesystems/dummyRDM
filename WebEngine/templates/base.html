@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="static/bootstrap/css/bootstrap.css" >
+    <script src="static/jquery/jquery-3.3.1.js"></script>
+    <script src="static/bootstrap/js/bootstrap.js"></script>
+
+    <link rel='icon' href="static/favicon.ico" type='image/x-icon' sizes="16x16" />
+    <title>DummyRDM - {% block title %}{% end %}</title>
+    {% block scripts %}
+    {% end %}
+  </head>
+  <nav class="navbar navbar-expand-sm bg-dark navbar-dark text-center">
+        <a class="navbar-brand" href="#">DummyRDM</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="collapsibleNavbar">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Device Management</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Art-Net Management</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">RDMNet Management</a>
+                </li>
+                {% block nav %}
+                {% end %}
+            </ul>
+        </div>
+    </nav>
+  <body class="text-center">
+  {% block content %}
+  {% end %}
+  </body>
+  <!-- Footer -->
+  <footer class="py-5 bg-dark">
+    <div class="container">
+      <p class="m-0 text-center text-white">Copyright &copy; D5 Systems Ltd 2019</p>
+    </div>
+    <!-- /.container -->
+  </footer>
+</html>
