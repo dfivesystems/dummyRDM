@@ -27,6 +27,8 @@ class rdmdevice(Thread):
     devlabel = "Device ID"
     softwareverslabel = "0.01 Alpha"
     category = 0x7101
+    factorystatus = 1
+    identifystatus = 1
     sensors = [sensors.dummysensor(), sensors.dummysensor(), sensors.dummysensor()]
 
     currentpers = 0
@@ -41,8 +43,6 @@ class rdmdevice(Thread):
     lampstrikes = 1
     devhours = 1
     powercycles = 1
-
-    
     
     #LLRP/RDMNet Details
     hwaddr = ""
@@ -56,16 +56,16 @@ class rdmdevice(Thread):
     #llrpswitcher contains PIDs that are supported by both LLRP and Art/RDMNet targets
     llrpswitcher = {
         pids.RDM_device_info: gethandlers.devinfo,
-        #Reset
-        #Factory Defaults
+        pids.RDM_reset_device: gethandlers.devreset,
+        pids.RDM_factory_defaults: gethandlers.devfactory,
         pids.RDM_device_label: gethandlers.devlabel,
         pids.RDM_manufacturer_label: gethandlers.devmanufacturer,
         pids.RDM_device_model_description: gethandlers.devmodel,
-        #Identify
+        pids.RDM_identify: gethandlers.devidentify,
         #Lock State
         #Lock State Description
-        #E133 component scope
-        #E133 search domain
+        pids.E133_component_scope: gethandlers.devscope,
+        pids.E133_search_domain: gethandlers.devsearch,
         #E133 tcp comms status
         #E133 Broker Status
         #E137-2 Messages as appropriate
@@ -80,8 +80,10 @@ class rdmdevice(Thread):
         pids.RDM_lamp_strikes: gethandlers.lampstrikes,
         pids.RDM_device_power_cycles: gethandlers.powercycles,
         pids.RDM_supported_parameters: gethandlers.supportedpids,
-
-        # pids.RDM_identify: None,#Identify
+        #Sensor Definition
+        #Sensor Value
+        #Personalities
+        #
     }
 
     def __init__(self):

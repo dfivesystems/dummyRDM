@@ -3,20 +3,17 @@ RDMDevice:
     Add More Pids
     Enable loading from template
     Add Custom PIDS
-    Add Set capabilities
 
 ArtNet:
     handlers:
         add opcodes as appropriate
         Write DMX data to port buffer
         Check TODdata works with greater than 200 devices
-
     packets:
         Add remaining opcodes
 
 RDM:
     Add many more PIDS
-    Add some set handlers
 
 RDMNet:
     Just, start
