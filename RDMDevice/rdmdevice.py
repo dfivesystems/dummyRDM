@@ -90,8 +90,9 @@ class rdmdevice(Thread):
         super().__init__()
         self.llrpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.llrpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        self.llrpsocket.bind(("0.0.0.0", llrp.llrpport))
-        mreq = struct.pack("4sl", socket.inet_aton(llrp.llrp_multicast_v4_request), socket.INADDR_ANY)
+        self.llrpsocket.bind(('0.0.0.0', llrp.llrpport))
+        self.llrpsocket.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton('192.168.56.1'))
+        mreq = struct.pack("4s4s", socket.inet_aton(llrp.llrp_multicast_v4_request), socket.inet_aton('192.168.56.1'))
         self.llrpsocket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
         print("LLRP Listening")

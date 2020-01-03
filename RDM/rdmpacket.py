@@ -73,9 +73,7 @@ class RDMpacket:
         retval.extend(self.pid.to_bytes(2, 'big'))
         retval.extend(self.pdl.to_bytes(1, 'big'))
         retval.extend(self.pd)
-        calc = 0x00
-        for byte in retval:
-            calc = calc + byte
+        calc = sum(retval)
         self.checksum = calc
 
     def checkchecksum(self) -> bool:
@@ -98,13 +96,11 @@ class RDMpacket:
         retval.extend(self.pid.to_bytes(2, 'big'))
         retval.extend(self.pdl.to_bytes(1, 'big'))
         retval.extend(self.pd)
-        calc = 0x00
-        for byte in retval:
-            calc = calc + byte
+        calc = sum(retval)
         
         if calc == self.checksum:
             return True
         else:
-            print("RDM Checksum Failed, PID:{:04x} Calc'ed Checksum: {} Sent Checksum {}".format(self.pid, calc, self.checksum))
+            print("RDM Checksum Failed, PID:{:04x} Calc'ed Checksum: {:04x} Sent Checksum {:04x}".format(self.pid, calc, self.checksum))
             return False
         

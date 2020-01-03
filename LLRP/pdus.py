@@ -51,16 +51,16 @@ def llrp_rpt_pdu(self, rptpd, srcpdu):
     data.extend(vectors.vector_root_llrp)
     data.extend(self.cid)
     data.extend(b'\xF0\x00\x2c')
-    data.extend(b'\x00\x00\x00\x03')
+    data.extend(vectors.vector_llrp_rdm_cmd)
     data.extend(srcpdu[23:39])
     data.extend(srcpdu[62:66])
     data.extend(b'\xF0\x00\x11')
     data.extend(b'\xcc')
     data.extend(rptpd)
     # Now Do Length Calculations
-    rootpdu = len(rptpd)+22+26+5
-    llrppdu = len(rptpd)+26+4
-    commandpdu = len(rptpd)+3
+    rootpdu = len(rptpd)+22+26+6
+    llrppdu = len(rptpd)+26+5
+    commandpdu = len(rptpd)+4
     data[17:19] = rootpdu.to_bytes(2, 'big')
     data[40:42] = llrppdu.to_bytes(2, 'big')
     data[67:69] = commandpdu.to_bytes(2, 'big')

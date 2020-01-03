@@ -51,6 +51,7 @@ def handlellrprequest(self, pdu):
     request.upperUID = pdu[76:82]
     request.filter = pdu[82]
     kid = pdu[83:]
+    # BUG: Doesnt seem to work...
     for x in range(0, len(kid), 6):
         request.knownUIDs.append(kid[x:x+6])
     if request.knownUIDs.__contains__(self.uid):
@@ -65,9 +66,9 @@ def handlellrprequest(self, pdu):
     data.extend(b'\xF0\x00\x2c')
     data.extend(b'\x00\x00\x00\x02')
     data.extend(request.senderCID)
-    data.extend(b'\x00\x00\x00\x00')
+    data.extend(pdu[62:66])
     data.extend(b'\xF0\x00\x11')
-    data.extend(b'\x02')
+    data.extend(b'\x01')
     data.extend(self.uid)
     data.extend(self.uid)
     data.extend(b'\x00')
@@ -75,6 +76,7 @@ def handlellrprequest(self, pdu):
 
 
 def handlerdm(self, pdu):
+    print("RDM")
     # Check cid is ours
     if pdu[46:62] != self.cid:
         print("Incorrect CID - ignoring")
