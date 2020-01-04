@@ -24,7 +24,6 @@ class rdmdevice(Thread):
     label = "D5 RDMNet Test Device"
     mfr = "D5 Systems"
     model = "Test Device"
-    devlabel = "Device ID"
     softwareverslabel = "0.01 Alpha"
     category = 0x7101
     factorystatus = 1

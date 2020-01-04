@@ -1,7 +1,6 @@
 from RDM import checksums, rdmpacket, defines, nackcodes
 from struct import unpack, pack 
-#TODO: Check any PIDs that return strings return without padding spaces
-#TODO: Personality Descriptions, Parameter Description, Sensors
+#TODO: Personality Descriptions, Parameter Description
 
 def devreset(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Performs a simulated hot/cold reset on the device
@@ -197,7 +196,7 @@ def devmanufacturer(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     if recpdu.cc is not defines.CC_Get_command:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
     sendpdu = rdmpacket.RDMpacket()
-    sendpdu.length = 0x38
+    
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
@@ -206,8 +205,12 @@ def devmanufacturer(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
     sendpdu.pid = 0x0081
-    sendpdu.pdl = 32
-    sendpdu.pd = (bytes('{:<32}'.format(self.mfr), 'utf8'))
+    if len(self.mfr) > 32:
+        sendpdu.pd = bytes(self.mfr[:32], 'utf-8')
+    else:
+        sendpdu.pd = bytes(self.mfr, 'utf-8') #Limit 32 Characters
+    sendpdu.pdl = len(sendpdu.pd)
+    sendpdu.length = 24+sendpdu.pdl
     sendpdu.calcchecksum()
     return sendpdu
 
@@ -220,7 +223,6 @@ def devmodel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     if recpdu.cc is not defines.CC_Get_command:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
     sendpdu = rdmpacket.RDMpacket()
-    sendpdu.length = 0x38
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
@@ -229,8 +231,12 @@ def devmodel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
     sendpdu.pid = 0x0080
-    sendpdu.pdl = 32
-    sendpdu.pd = (bytes('{:<32}'.format(self.model), 'utf8'))
+    if len(self.model) > 32:
+        sendpdu.pd = bytes(self.model[:32], 'utf-8')
+    else:
+        sendpdu.pd = bytes(self.model, 'utf-8') #Limit 32 Characters
+    sendpdu.pdl = len(sendpdu.pd)
+    sendpdu.length = 24+sendpdu.pdl
     sendpdu.calcchecksum()
     return sendpdu
 
@@ -242,7 +248,6 @@ def devlabel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
 
     if recpdu.cc == defines.CC_Get_command:
         sendpdu = rdmpacket.RDMpacket()
-        sendpdu.length = 0x38
         sendpdu.destuid = recpdu.srcuid
         sendpdu.srcuid = self.uid
         sendpdu.tn = recpdu.tn
@@ -251,8 +256,12 @@ def devlabel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.sub_id = 0x0000
         sendpdu.cc = 0x21
         sendpdu.pid = 0x0082
-        sendpdu.pdl = 32
-        sendpdu.pd = (bytes('{:<32}'.format(self.devlabel), 'utf8'))
+        if len(self.label) > 32:
+            sendpdu.pd = bytes(self.label[:32], 'utf-8')
+        else:
+            sendpdu.pd = bytes(self.label, 'utf-8') #Limit 32 Characters
+        sendpdu.pdl = len(sendpdu.pd)
+        sendpdu.length = 24+sendpdu.pdl
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
@@ -502,7 +511,7 @@ def devscope(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     RDM_GET = yes
     RDM_SET = yes
     """
-
+    #TODO: Currently this only returns scope 1
     if recpdu.cc == defines.CC_Get_command:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.destuid = recpdu.srcuid
@@ -514,8 +523,17 @@ def devscope(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.cc = 0x21
         sendpdu.pid = 0x0800 
         sendpdu.pdl = 34
-        sendpdu.pd = bytearray(b'\x00\x00')
-        sendpdu.pd.extend(bytes('{:<32}'.format(self.scope), 'utf8'))
+        sendpdu.pd = bytearray(b'\x00\x01')
+        sendpdu.pd.extend(bytes('{:<63}'.format(self.scope), 'utf8'))
+        #Static config Type,
+        sendpdu.pd.extend(b'\x01')
+        #IPv4 Address
+        sendpdu.pd.extend(b'\x7f\x00\x00\x01')
+        #IPv6 Address
+        sendpdu.pd.extend(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01')
+        #Port
+        sendpdu.pd.extend(b'\x00\x00')
+        sendpdu.pdl = len(sendpdu.pd)
         sendpdu.length = 24+sendpdu.pdl
         sendpdu.calcchecksum()
         return sendpdu
@@ -552,8 +570,11 @@ def devsearch(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.sub_id = 0x0000
         sendpdu.cc = 0x21
         sendpdu.pid = 0x0801
-        sendpdu.pdl = 32
-        sendpdu.pd = (bytes('{:<32}'.format(self.searchdomain), 'utf8'))
+        if len(self.searchdomain) > 32:
+            sendpdu.pd = bytes(self.searchdomain[:32], 'utf-8')
+        else:
+            sendpdu.pd = bytes(self.searchdomain, 'utf-8') #Limit 32 Characters
+        sendpdu.pdl = len(sendpdu.pd)
         sendpdu.length = 24+sendpdu.pdl
         sendpdu.calcchecksum()
         return sendpdu
@@ -605,7 +626,6 @@ def sensordef(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
             #NACK
             return nackreturn(self, recpdu, nackcodes.nack_data_range)
 
-
 def sensorval(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Returns a sensor value rdmpacket for the given device
     RDM_GET = yes
@@ -638,7 +658,6 @@ def sensorval(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
             #NACK
             return nackreturn(self, recpdu, nackcodes.nack_data_range)
         
-
 def nackreturn(self,recpdu: rdmpacket.RDMpacket, reasoncode) -> rdmpacket.RDMpacket:
     print("Nacking PID {:04x}".format(recpdu.pid))
     sendpdu = rdmpacket.RDMpacket()
