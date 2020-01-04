@@ -1,6 +1,7 @@
 from RDM import checksums, rdmpacket, defines, nackcodes
 from struct import unpack
 #TODO: Check any PIDs that return strings return without padding spaces
+#TODO: Personality Descriptions, Parameter Description, Sensors
 
 def devreset(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Performs a simulated hot/cold reset on the device

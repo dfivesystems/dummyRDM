@@ -76,7 +76,6 @@ def handlellrprequest(self, pdu):
 
 
 def handlerdm(self, pdu):
-    print("RDM")
     # Check cid is ours
     if pdu[46:62] != self.cid:
         print("Incorrect CID - ignoring")
