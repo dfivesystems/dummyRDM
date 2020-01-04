@@ -1,5 +1,5 @@
 from RDM import checksums, rdmpacket, defines, nackcodes
-from struct import unpack
+from struct import unpack, pack 
 #TODO: Check any PIDs that return strings return without padding spaces
 #TODO: Personality Descriptions, Parameter Description, Sensors
 
@@ -165,7 +165,6 @@ def devinfo(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.calcchecksum()
     return sendpdu
 
-
 def devsoftwareversion(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Returns a Device Software Version rdmpacket for the given device
     RDM_GET = yes
@@ -211,7 +210,6 @@ def devmanufacturer(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.pd = (bytes('{:<32}'.format(self.mfr), 'utf8'))
     sendpdu.calcchecksum()
     return sendpdu
-
 
 def devmodel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Returns a Device Model Description rdmpacket for the given device
@@ -273,7 +271,6 @@ def devlabel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.calcchecksum()
     else:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
-
 
 def dmxaddress(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Returns a dmx address rdmpacket for the given device
@@ -500,7 +497,6 @@ def supportedpids(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu.calcchecksum()
     return sendpdu
 
-
 def devscope(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Return an RDM packet for device scope
     RDM_GET = yes
@@ -540,7 +536,6 @@ def devscope(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     else:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
 
-
 def devsearch(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """Return an RDM packet for device scope 
     RDM_GET = yes
@@ -578,6 +573,71 @@ def devsearch(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.calcchecksum()
     else:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
+
+def sensordef(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
+    """Returns a sensor definition rdmpacket for the given device
+    RDM_GET = yes
+    RDM_SET = no
+    """
+
+    if recpdu.cc is not defines.CC_Get_command:
+        return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
+    else:
+        sensno = recpdu.pd[0]
+        if sensno < len(self.sensors):
+            #Ack and return definition
+            sendpdu = rdmpacket.RDMpacket()
+            
+            sendpdu.destuid = recpdu.srcuid
+            sendpdu.srcuid = self.uid
+            sendpdu.tn = recpdu.tn
+            sendpdu.port_resp = 0x00
+            sendpdu.mess_cnt = 0x00
+            sendpdu.sub_id = 0x0000
+            sendpdu.cc = 0x21
+            sendpdu.pid = 0x0200
+            sendpdu.pd = self.sensors[sensno].rdmdef(sensno)
+            sendpdu.pdl = len(sendpdu.pd)
+            sendpdu.length = 0x18 + sendpdu.pdl
+            sendpdu.calcchecksum()
+            return sendpdu
+        else:
+            #NACK
+            return nackreturn(self, recpdu, nackcodes.nack_data_range)
+
+
+def sensorval(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
+    """Returns a sensor value rdmpacket for the given device
+    RDM_GET = yes
+    RDM_SET = no
+    """
+
+    if recpdu.cc is not defines.CC_Get_command:
+        return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
+    else:
+        sensno = recpdu.pd[0]
+        if sensno < len(self.sensors):
+            #Ack and return definition
+            sendpdu = rdmpacket.RDMpacket()
+            self.sensors[sensno].updateval()
+            sendpdu.destuid = recpdu.srcuid
+            sendpdu.srcuid = self.uid
+            sendpdu.tn = recpdu.tn
+            sendpdu.port_resp = 0x00
+            sendpdu.mess_cnt = 0x00
+            sendpdu.sub_id = 0x0000
+            sendpdu.cc = 0x21
+            sendpdu.pid = 0x0201
+            sendpdu.pd = bytearray(sensno.to_bytes(1, 'big'))
+            sendpdu.pd.extend(pack('!h', self.sensors[sensno].value))
+            sendpdu.pdl = len(sendpdu.pd)
+            sendpdu.length = 0x18 + sendpdu.pdl
+            sendpdu.calcchecksum()
+            return sendpdu
+        else:
+            #NACK
+            return nackreturn(self, recpdu, nackcodes.nack_data_range)
+        
 
 def nackreturn(self,recpdu: rdmpacket.RDMpacket, reasoncode) -> rdmpacket.RDMpacket:
     print("Nacking PID {:04x}".format(recpdu.pid))

@@ -29,7 +29,9 @@ class rdmdevice(Thread):
     category = 0x7101
     factorystatus = 1
     identifystatus = 1
-    sensors = [sensors.dummysensor(), sensors.dummysensor(), sensors.dummysensor()]
+    sensors = [sensors.dummysensor("Sensor 1", -100, 100, -50, 50, defines.Sens_temperature, defines.Sens_unit_centigrade, defines.Prefix_none)
+    , sensors.dummysensor("Sensor 2", -100, 100, -50, 50, defines.Sens_temperature, defines.Sens_unit_centigrade, defines.Prefix_none)
+    , sensors.dummysensor("Sensor 3", -100, 100, -50, 50, defines.Sens_temperature, defines.Sens_unit_centigrade, defines.Prefix_none)]
 
     currentpers = 0
     perslist = {
@@ -80,8 +82,8 @@ class rdmdevice(Thread):
         pids.RDM_lamp_strikes: gethandlers.lampstrikes,
         pids.RDM_device_power_cycles: gethandlers.powercycles,
         pids.RDM_supported_parameters: gethandlers.supportedpids,
-        #Sensor Definition
-        #Sensor Value
+        pids.RDM_sensor_definition: gethandlers.sensordef,
+        pids.RDM_sensor_value: gethandlers.sensorval,
         #Personalities
         #
     }

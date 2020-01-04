@@ -1,5 +1,4 @@
 RDMDevice:
-    Add Sensors
     Add More Pids
     Enable loading from template
     Add Custom PIDS
