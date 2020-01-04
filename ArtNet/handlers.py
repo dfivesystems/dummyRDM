@@ -90,12 +90,13 @@ def opTodDatahandler(self, raw_data):
 def opRdmHandler(self, raw_data):
     opcode = unpack('!H', raw_data[8:10])
     opcode = opcode[0] << 8
+    packet = None
     packet = packets.ArtRDMPacket()
     packet.opcode = opcode
     packet.net = raw_data[21]
     packet.command = raw_data[22]
     packet.address = raw_data[23]
-    packet.rdmpd.fromart(raw_data[24:-1])
+    packet.rdmpd.fromart(raw_data[24:])
     if not packet.rdmpd.checkchecksum():
         return None
     for x in self.devicestore:
@@ -115,6 +116,8 @@ def opRdmHandler(self, raw_data):
                     self.artnetsocket.sendto(tosend, (self.HOST.network.broadcast_address.exploded, 6454))
                 except socket.error as e:
                             print("Socket error{0}".format(e))
+                return None
         else:
             pass
             #print("Not known at this address")
+    return None
