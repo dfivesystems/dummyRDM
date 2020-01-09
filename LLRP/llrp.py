@@ -51,7 +51,7 @@ def handlellrprequest(self, pdu):
     # BUG: Doesnt seem to work...
     for x in range(0, len(kid), 6):
         request.knownUIDs.append(kid[x:x+6])
-    if request.knownUIDs.__contains__(self.uid):
+    if request.knownUIDs.__contains__(self.device_descriptor.uid):
         return None
     # Respond to Request
     #TODO: Make this class based for tidyness
@@ -59,26 +59,26 @@ def handlellrprequest(self, pdu):
     data.extend(vectors.ACNheader)
     data.extend(b'\xF0\x00\x43')
     data.extend(vectors.vector_root_llrp)
-    data.extend(self.cid)
+    data.extend(self.device_descriptor.cid)
     data.extend(b'\xF0\x00\x2c')
     data.extend(b'\x00\x00\x00\x02')
     data.extend(request.senderCID)
     data.extend(pdu[62:66])
     data.extend(b'\xF0\x00\x11')
     data.extend(b'\x01')
-    data.extend(self.uid)
-    data.extend(self.uid)
+    data.extend(self.device_descriptor.uid)
+    data.extend(self.device_descriptor.uid)
     data.extend(b'\x00')
-    self.llrpsocket.sendto(data, (llrp_multicast_v4_response, 5569))
+    self.transport.sendto(data, (llrp_multicast_v4_response, 5569))
 
 
 def handlerdm(self, pdu):
     # Check cid is ours
-    if pdu[46:62] != self.cid:
+    if pdu[46:62] != self.device_descriptor.cid:
         print("Incorrect CID - ignoring")
         return None
     # Check UID is ours
-    if pdu[72:78] != self.uid:
+    if pdu[72:78] != self.device_descriptor.uid:
         print("Incorrect UID - ignoring")
         return None
     # Process the packet
@@ -87,15 +87,15 @@ def handlerdm(self, pdu):
     srcpacket.fromart(pdu[70:])
     if not srcpacket.checkchecksum():
         return None
-    func = self.llrpswitcher.get(srcpacket.pid, "NACK")  
+    func = self.device_descriptor.llrpswitcher.get(srcpacket.pid, "NACK")  
     if func is not "NACK":
         returnpacket = func(self, srcpacket)
         pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-        self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
+        self.transport.sendto(pdu, (llrp_multicast_v4_response, 5569))
     else:
         print("Device {} does not support PID:0x{:04x} on LLRP target".format(self.uid.hex(), srcpacket.pid))
         returnpacket = gethandlers.nackreturn(self, srcpacket, nackcodes.nack_unknown)
         pdu = pdus.llrp_rpt_pdu(self, returnpacket.artserialise(), pdu)
-        self.llrpsocket.sendto(pdu, (llrp_multicast_v4_response, 5569))
+        self.transport.sendto(pdu, (llrp_multicast_v4_response, 5569))
     return
 

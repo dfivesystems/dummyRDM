@@ -49,7 +49,7 @@ def llrp_rpt_pdu(self, rptpd, srcpdu):
     data.extend(vectors.ACNheader)
     data.extend(b'\xF0\x00\x43')
     data.extend(vectors.vector_root_llrp)
-    data.extend(self.cid)
+    data.extend(self.device_descriptor.cid)
     data.extend(b'\xF0\x00\x2c')
     data.extend(vectors.vector_llrp_rdm_cmd)
     data.extend(srcpdu[23:39])

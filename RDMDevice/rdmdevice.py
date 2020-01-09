@@ -6,6 +6,7 @@ import ipaddress
 from RDM import gethandlers, pids, nackcodes, sensors, rdmpacket, defines
 from LLRP import asyncllrp
 from RDMNet import pdus, vectors, brokerhandlers
+from RDMDevice import devicedescriptor
 
 
 class rdmdevice(Thread):
@@ -18,8 +19,8 @@ class rdmdevice(Thread):
 
     """
 
-    # These parameters are to define the basic features for the device
-    cid = bytearray(b'\xD5\xD5')
+    desc = devicedescriptor.DeviceDescriptor()
+    desc.sensors = [sensors.dummysensor("Sensor 1", -100, 100, -50, 50, defines.Sens_temperature,
     cid.extend(uuid4().bytes[2:])
     uid = cid[:6]
 
@@ -38,29 +39,29 @@ class rdmdevice(Thread):
                                      defines.Sens_unit_centigrade, defines.Prefix_none)]
 
     currentpers = 0
-    perslist = {
+    desc.perslist = {
         "Sample Personality": 4,
         "Another Personality": 8,
     }
 
-    dmxaddress = 1
-    dmxfootprint = 4
-    lamphours = 1
-    lampstrikes = 1
-    devhours = 1
-    powercycles = 1
+    desc.dmxaddress = 1
+    desc.dmxfootprint = 4
+    desc.lamphours = 1
+    desc.lampstrikes = 1
+    desc.devhours = 1
+    desc.powercycles = 1
     
     #LLRP/RDMNet Details
-    hwaddr = ""
-    devtype = 0
-    brokerip = ""
-    searchdomain = ".local"
-    scope = "default"
+    desc.hwaddr = ""
+    desc.devtype = 0
+    desc.brokerip = ""
+    desc.searchdomain = ".local"
+    desc.scope = "default"
 
     # These dicts contains lists of device supported PIDS
 
     #llrpswitcher contains PIDs that are supported by both LLRP and Art/RDMNet targets
-    llrpswitcher = {
+    desc.llrpswitcher = {
         pids.RDM_device_info: gethandlers.devinfo,
         pids.RDM_reset_device: gethandlers.devreset,
         pids.RDM_factory_defaults: gethandlers.devfactory,
@@ -78,7 +79,7 @@ class rdmdevice(Thread):
     }
 
     #getswitcher contains PIDs that are supported by ONLY Art/RDMNet targets
-    getswitcher = {
+    desc.getswitcher = {
         pids.RDM_software_version_label: gethandlers.devsoftwareversion,
         pids.RDM_dmx_start_address: gethandlers.dmxaddress,
         pids.RDM_device_hours: gethandlers.devhours,

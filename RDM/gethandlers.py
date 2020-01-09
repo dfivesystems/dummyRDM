@@ -13,17 +13,17 @@ def devreset(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     if recpdu.cc == defines.CC_Set_command:
         if recpdu.pd[0] == 0x01:
             #Warm Reset
-            print("Device {}: Warm reset requested".format(self.uid.hex()))
+            print("Device {}: Warm reset requested".format(self.device_descriptor.uid.hex()))
         elif recpdu[1] == 0xFF:
             #Cold Reset
-            print("Device {}: Cold reset requested".format(self.uid.hex()))
+            print("Device {}: Cold reset requested".format(self.device_descriptor.uid.hex()))
         else:
             #Out of range NACK
             return nackreturn(self, recpdu, nackcodes.nack_data_range)
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -47,7 +47,7 @@ def devfactory(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 25
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -55,7 +55,7 @@ def devfactory(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.cc = defines.CC_Get_command_resp
         sendpdu.pid = recpdu.pid
         sendpdu.pdl = 1
-        sendpdu.pd = self.factorystatus.to_bytes(1, 'big')
+        sendpdu.pd = self.device_descriptor.factorystatus.to_bytes(1, 'big')
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
@@ -64,7 +64,7 @@ def devfactory(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
             sendpdu = rdmpacket.RDMpacket()
             sendpdu.length = 24
             sendpdu.destuid = recpdu.srcuid
-            sendpdu.srcuid = self.uid
+            sendpdu.srcuid = self.device_descriptor.uid
             sendpdu.tn = recpdu.tn
             sendpdu.port_resp = 0x00
             sendpdu.mess_cnt = 0x00
@@ -91,7 +91,7 @@ def devidentify(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 25
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -99,16 +99,17 @@ def devidentify(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.cc = defines.CC_Get_command_resp
         sendpdu.pid = recpdu.pid
         sendpdu.pdl = 1
-        sendpdu.pd = self.identifystatus.to_bytes(1, 'big')
+        sendpdu.pd = self.device_descriptor.identifystatus.to_bytes(1, 'big')
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
         if recpdu.pd[0] <= 1:
-            print("Device {}: Identify set to {:02x}".format(self.uid.hex(), recpdu.pd[0]))
+            print("Device {}: Identify set to {:02x}".format(self.device_descriptor.uid.hex(), recpdu.pd[0]))
+            self.device_descriptor.identifystatus = recpdu.pd[0]
             sendpdu = rdmpacket.RDMpacket()
             sendpdu.length = 24
             sendpdu.destuid = recpdu.srcuid
-            sendpdu.srcuid = self.uid
+            sendpdu.srcuid = self.device_descriptor.uid
             sendpdu.tn = recpdu.tn
             sendpdu.port_resp = 0x00
             sendpdu.mess_cnt = 0x00
@@ -135,7 +136,7 @@ def devinfo(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu = rdmpacket.RDMpacket()
     sendpdu.length = 0x2b
     sendpdu.destuid = recpdu.srcuid
-    sendpdu.srcuid = self.uid
+    sendpdu.srcuid = self.device_descriptor.uid
     sendpdu.tn = recpdu.tn
     sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
@@ -152,17 +153,17 @@ def devinfo(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     # Software Version
     sendpdu.pd.extend(b'\x01\x02\x03\x04')
     # DMX Footprint
-    sendpdu.pd.extend(self.dmxfootprint.to_bytes(2, 'big'))
+    sendpdu.pd.extend(self.device_descriptor.dmxfootprint.to_bytes(2, 'big'))
     # DMX Personality
-    sendpdu.pd.extend(self.currentpers.to_bytes(1, 'big'))
-    perslen = len(self.perslist)+1
+    sendpdu.pd.extend(self.device_descriptor.currentpers.to_bytes(1, 'big'))
+    perslen = len(self.device_descriptor.perslist)+1
     sendpdu.pd.extend(perslen.to_bytes(1, 'big'))
     # DMX Start Address
-    sendpdu.pd.extend(self.dmxaddress.to_bytes(2, 'big'))
+    sendpdu.pd.extend(self.device_descriptor.dmxaddress.to_bytes(2, 'big'))
     # Sub Device Count
     sendpdu.pd.extend(b'\x00\x00')
     # Sensor Count
-    sendpdu.pd.extend(len(self.sensors).to_bytes(1, 'big'))
+    sendpdu.pd.extend(len(self.device_descriptor.sensors).to_bytes(1, 'big'))
     sendpdu.calcchecksum()
     return sendpdu
 
@@ -176,17 +177,17 @@ def devsoftwareversion(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
     sendpdu = rdmpacket.RDMpacket()
     sendpdu.destuid = recpdu.srcuid
-    sendpdu.srcuid = self.uid
+    sendpdu.srcuid = self.device_descriptor.uid
     sendpdu.tn = recpdu.tn
     sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
     sendpdu.pid = 0x00C0
-    if len(self.softwareverslabel) > 32:
-        sendpdu.pd = bytes(self.softwareverslabel[:32], 'utf-8')
+    if len(self.device_descriptor.softwareverslabel) > 32:
+        sendpdu.pd = bytes(self.device_descriptor.softwareverslabel[:32], 'utf-8')
     else:
-        sendpdu.pd = bytes(self.softwareverslabel, 'utf-8') #Limit 32 Characters
+        sendpdu.pd = bytes(self.device_descriptor.softwareverslabel, 'utf-8') #Limit 32 Characters
     sendpdu.pdl = len(sendpdu.pd)
     sendpdu.length = 24+sendpdu.pdl
     sendpdu.calcchecksum()
@@ -203,17 +204,17 @@ def devmanufacturer(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     sendpdu = rdmpacket.RDMpacket()
     
     sendpdu.destuid = recpdu.srcuid
-    sendpdu.srcuid = self.uid
+    sendpdu.srcuid = self.device_descriptor.uid
     sendpdu.tn = recpdu.tn
     sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
     sendpdu.pid = 0x0081
-    if len(self.mfr) > 32:
-        sendpdu.pd = bytes(self.mfr[:32], 'utf-8')
+    if len(self.device_descriptor.mfr) > 32:
+        sendpdu.pd = bytes(self.device_descriptor.mfr[:32], 'utf-8')
     else:
-        sendpdu.pd = bytes(self.mfr, 'utf-8') #Limit 32 Characters
+        sendpdu.pd = bytes(self.device_descriptor.mfr, 'utf-8') #Limit 32 Characters
     sendpdu.pdl = len(sendpdu.pd)
     sendpdu.length = 24+sendpdu.pdl
     sendpdu.calcchecksum()
@@ -229,17 +230,17 @@ def devmodel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
     sendpdu = rdmpacket.RDMpacket()
     sendpdu.destuid = recpdu.srcuid
-    sendpdu.srcuid = self.uid
+    sendpdu.srcuid = self.device_descriptor.uid
     sendpdu.tn = recpdu.tn
     sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
     sendpdu.pid = 0x0080
-    if len(self.model) > 32:
-        sendpdu.pd = bytes(self.model[:32], 'utf-8')
+    if len(self.device_descriptor.model) > 32:
+        sendpdu.pd = bytes(self.device_descriptor.model[:32], 'utf-8')
     else:
-        sendpdu.pd = bytes(self.model, 'utf-8') #Limit 32 Characters
+        sendpdu.pd = bytes(self.device_descriptor.model, 'utf-8') #Limit 32 Characters
     sendpdu.pdl = len(sendpdu.pd)
     sendpdu.length = 24+sendpdu.pdl
     sendpdu.calcchecksum()
@@ -254,27 +255,27 @@ def devlabel(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     if recpdu.cc == defines.CC_Get_command:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
         sendpdu.sub_id = 0x0000
         sendpdu.cc = 0x21
         sendpdu.pid = 0x0082
-        if len(self.label) > 32:
-            sendpdu.pd = bytes(self.label[:32], 'utf-8')
+        if len(self.device_descriptor.label) > 32:
+            sendpdu.pd = bytes(self.device_descriptor.label[:32], 'utf-8')
         else:
-            sendpdu.pd = bytes(self.label, 'utf-8') #Limit 32 Characters
+            sendpdu.pd = bytes(self.device_descriptor.label, 'utf-8') #Limit 32 Characters
         sendpdu.pdl = len(sendpdu.pd)
         sendpdu.length = 24+sendpdu.pdl
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
-        self.label = recpdu.pd.decode('utf-8')
+        self.device_descriptor.label = recpdu.pd.decode('utf-8')
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -296,7 +297,7 @@ def dmxaddress(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 0x1a
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -304,15 +305,15 @@ def dmxaddress(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.cc = 0x21
         sendpdu.pid = 0x00f0
         sendpdu.pdl = 0x02
-        sendpdu.pd = self.dmxaddress.to_bytes(2, 'big')
+        sendpdu.pd = self.device_descriptor.dmxaddress.to_bytes(2, 'big')
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
-        self.dmxaddress = unpack('!H', recpdu.pd[0:2])[0]
+        self.device_descriptor.dmxaddress = unpack('!H', recpdu.pd[0:2])[0]
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -331,11 +332,11 @@ def devhours(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """
 
     if recpdu.cc == defines.CC_Get_command:
-        self.devhours += 1
+        self.device_descriptor.devhours += 1
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 0x1c
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -343,15 +344,15 @@ def devhours(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.cc = 0x21
         sendpdu.pid = 0x0400
         sendpdu.pdl = 0x04
-        sendpdu.pd = self.devhours.to_bytes(4, 'big')
+        sendpdu.pd = self.device_descriptor.devhours.to_bytes(4, 'big')
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
-        self.devhours = unpack('!L', recpdu.pd[0:4])[0]
+        self.device_descriptor.devhours = unpack('!L', recpdu.pd[0:4])[0]
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -370,11 +371,11 @@ def lamphours(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """
 
     if recpdu.cc == defines.CC_Get_command:
-        self.lamphours += 1
+        self.device_descriptor.lamphours += 1
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 0x1c
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -382,15 +383,15 @@ def lamphours(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.cc = 0x21
         sendpdu.pid = 0x0401
         sendpdu.pdl = 0x04
-        sendpdu.pd = self.lamphours.to_bytes(4, 'big')
+        sendpdu.pd = self.device_descriptor.lamphours.to_bytes(4, 'big')
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
-        self.lamphours = unpack('!L', recpdu.pd[0:4])[0]
+        self.device_descriptor.lamphours = unpack('!L', recpdu.pd[0:4])[0]
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -409,11 +410,11 @@ def lampstrikes(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """
 
     if recpdu.cc == defines.CC_Get_command:
-        self.lampstrikes += 1
+        self.device_descriptor.lampstrikes += 1
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 0x1c
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -421,15 +422,15 @@ def lampstrikes(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.cc = 0x21
         sendpdu.pid = 0x0402
         sendpdu.pdl = 0x04
-        sendpdu.pd = self.lampstrikes.to_bytes(4, 'big')
+        sendpdu.pd = self.device_descriptor.lampstrikes.to_bytes(4, 'big')
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
-        self.lampstrikes = unpack('!L', recpdu.pd[0:4])[0]
+        self.device_descriptor.lampstrikes = unpack('!L', recpdu.pd[0:4])[0]
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -448,11 +449,11 @@ def powercycles(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     """
 
     if recpdu.cc == defines.CC_Get_command:
-        self.powercycles += 1
+        self.device_descriptor.powercycles += 1
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 0x1c
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -460,15 +461,15 @@ def powercycles(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.cc = 0x21
         sendpdu.pid = 0x0405
         sendpdu.pdl = 0x04
-        sendpdu.pd = self.powercycles.to_bytes(4, 'big')
+        sendpdu.pd = self.device_descriptor.powercycles.to_bytes(4, 'big')
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
-        self.powercycles = unpack('!L', recpdu.pd[0:4])[0]
+        self.device_descriptor.powercycles = unpack('!L', recpdu.pd[0:4])[0]
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -491,15 +492,15 @@ def supportedpids(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
     sendpdu = rdmpacket.RDMpacket()
     sendpdu.destuid = recpdu.srcuid
-    sendpdu.srcuid = self.uid
+    sendpdu.srcuid = self.device_descriptor.uid
     sendpdu.tn = recpdu.tn
     sendpdu.port_resp = 0x00
     sendpdu.mess_cnt = 0x00
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
     sendpdu.pid = 0x0050  
-    rdmlist = list(self.getswitcher.keys())
-    llrplist = list(self.llrpswitcher.keys())
+    rdmlist = list(self.device_descriptor.getswitcher.keys())
+    llrplist = list(self.device_descriptor.llrpswitcher.keys())
     sendpdu.pdl = (len(rdmlist)+len(llrplist))*2
     keybytes = bytearray()
     for key in rdmlist:
@@ -520,7 +521,7 @@ def devscope(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     if recpdu.cc == defines.CC_Get_command:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -529,11 +530,11 @@ def devscope(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.pid = 0x0800 
         sendpdu.pdl = 34
         sendpdu.pd = bytearray(b'\x00\x01')
-        if len(self.scope) > 63:
-            sendpdu.pd.extend(bytes(self.scope[:63], 'utf-8'))
+        if len(self.device_descriptor.scope) > 63:
+            sendpdu.pd.extend(bytes(self.device_descriptor.scope[:63], 'utf-8'))
         else:
-            sendpdu.pd.extend(bytes(self.scope, 'utf-8'))
-            for i in range(63-len(self.scope)):
+            sendpdu.pd.extend(bytes(self.device_descriptor.scope, 'utf-8'))
+            for i in range(63-len(self.device_descriptor.scope)):
                 sendpdu.pd.extend(b'\x00')
         #Static config Type,
         sendpdu.pd.extend(b'\x01')
@@ -548,11 +549,11 @@ def devscope(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
-        self.scope = recpdu.pd.decode('utf-8')
+        self.device_descriptor.scope = recpdu.pd.decode('utf-8')
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -573,27 +574,27 @@ def devsearch(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     if recpdu.cc == defines.CC_Get_command:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
         sendpdu.sub_id = 0x0000
         sendpdu.cc = 0x21
         sendpdu.pid = 0x0801
-        if len(self.searchdomain) > 32:
-            sendpdu.pd = bytes(self.searchdomain[:32], 'utf-8')
+        if len(self.device_descriptor.searchdomain) > 32:
+            sendpdu.pd = bytes(self.device_descriptor.searchdomain[:32], 'utf-8')
         else:
-            sendpdu.pd = bytes(self.searchdomain, 'utf-8') #Limit 32 Characters
+            sendpdu.pd = bytes(self.device_descriptor.searchdomain, 'utf-8') #Limit 32 Characters
         sendpdu.pdl = len(sendpdu.pd)
         sendpdu.length = 24+sendpdu.pdl
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
-        self.searchdomain = recpdu.pd.decode('utf-8')
+        self.device_descriptor.searchdomain = recpdu.pd.decode('utf-8')
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid
-        sendpdu.srcuid = self.uid
+        sendpdu.srcuid = self.device_descriptor.uid
         sendpdu.tn = recpdu.tn
         sendpdu.port_resp = 0x00
         sendpdu.mess_cnt = 0x00
@@ -615,18 +616,18 @@ def sensordef(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
     else:
         sensno = recpdu.pd[0]
-        if sensno < len(self.sensors):
+        if sensno < len(self.device_descriptor.sensors):
             #Ack and return definition
             sendpdu = rdmpacket.RDMpacket()
             sendpdu.destuid = recpdu.srcuid
-            sendpdu.srcuid = self.uid
+            sendpdu.srcuid = self.device_descriptor.uid
             sendpdu.tn = recpdu.tn
             sendpdu.port_resp = 0x00
             sendpdu.mess_cnt = 0x00
             sendpdu.sub_id = 0x0000
             sendpdu.cc = 0x21
             sendpdu.pid = 0x0200
-            sendpdu.pd = self.sensors[sensno].rdmdef(sensno)
+            sendpdu.pd = self.device_descriptor.sensors[sensno].rdmdef(sensno)
             sendpdu.pdl = len(sendpdu.pd)
             sendpdu.length = 0x18 + sendpdu.pdl
             sendpdu.calcchecksum()
@@ -645,12 +646,12 @@ def sensorval(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
     else:
         sensno = recpdu.pd[0]
-        if sensno < len(self.sensors):
+        if sensno < len(self.device_descriptor.sensors):
             #Ack and return definition
             sendpdu = rdmpacket.RDMpacket()
-            self.sensors[sensno].updateval()
+            self.device_descriptor.sensors[sensno].updateval()
             sendpdu.destuid = recpdu.srcuid
-            sendpdu.srcuid = self.uid
+            sendpdu.srcuid = self.device_descriptor.uid
             sendpdu.tn = recpdu.tn
             sendpdu.port_resp = 0x00
             sendpdu.mess_cnt = 0x00
@@ -658,7 +659,7 @@ def sensorval(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
             sendpdu.cc = 0x21
             sendpdu.pid = 0x0201
             sendpdu.pd = bytearray(sensno.to_bytes(1, 'big'))
-            sendpdu.pd.extend(pack('!h', self.sensors[sensno].value))
+            sendpdu.pd.extend(pack('!h', self.device_descriptor.sensors[sensno].value))
             sendpdu.pdl = len(sendpdu.pd)
             sendpdu.length = 0x18 + sendpdu.pdl
             sendpdu.calcchecksum()
@@ -674,7 +675,7 @@ def nackreturn(self, recpdu: rdmpacket.RDMpacket, reasoncode) -> rdmpacket.RDMpa
     sendpdu = rdmpacket.RDMpacket()
     sendpdu.length = 0x1a
     sendpdu.destuid = recpdu.srcuid
-    sendpdu.srcuid = self.uid
+    sendpdu.srcuid = self.device_descriptor.uid
     sendpdu.tn = recpdu.tn
     sendpdu.port_resp = 0x02
     sendpdu.cc = 0x21
