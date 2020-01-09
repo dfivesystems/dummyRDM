@@ -1,10 +1,10 @@
 from uuid import uuid4
 from threading import Thread, Timer
 import socket
-import struct
+import asyncio
 import ipaddress
 from RDM import gethandlers, pids, nackcodes, sensors, rdmpacket, defines
-from LLRP import llrp
+from LLRP import asyncllrp
 from RDMNet import pdus, vectors, brokerhandlers
 
 
@@ -111,29 +111,32 @@ class rdmdevice(Thread):
         print("LLRP Listening")
 
     def run(self):
-        while True:
+        asyncio.run(self.main())
             data, = self.llrpsocket.recvfrom(1024)
             llrp.handlellrp(self, data)
 
-            rdmnetdata, = self.brokersocket.recv(1024)
-            self.handlerdmnet(data)
+    async def main(self):
+        await asyncio.gather(self.sendtcpheartbeat(), self.llrpmain(), self.identify())
 
+    async def llrpmain(self):
+        loop = asyncio.get_running_loop()
+        protocol = await asyncllrp.listenllrp(self, loop, '192.168.3.2', self.desc)
 
     def getpid(self, pid, recpdu) -> rdmpacket.RDMpacket:
         """Checks to see if either the LLRP PIDS or the RDM-only PIDS contains the
         requested PID. If they do, an RDM PDU is returned to the requesting
         engine, to be sent out from there. Used by Art-Net and RDMNet responders"""
 
-        func = self.llrpswitcher.get(pid, "NACK")  
+        func = self.desc.llrpswitcher.get(pid, "NACK")  
         if func is "NACK":
-            func = self.getswitcher.get(pid, "NACK")
+            func = self.desc.getswitcher.get(pid, "NACK")
         if func is not "NACK":
             return func(self, recpdu)
         else:
             return gethandlers.nackreturn(self, recpdu, nackcodes.nack_unknown)
 
     def newbroker(self, desc):
-        if self.scope == desc.scope:
+        if self.desc.scope == desc.scope:
             brokeraddress = ipaddress.ip_address(desc.address)
             try:
                 self.brokersocket.connect((brokeraddress.compressed, desc.port))
@@ -165,24 +168,33 @@ class rdmdevice(Thread):
             self.brokersocket.shutdown()
             self.brokersocket.close()
 
-    def sendtcpheartbeat(self):
-        packet = pdus.ACNTCPPreamble()
+    async def identify(self):
+        while True:
+            if self.desc.identifystatus is 0x01:
+                print("Annoying Identify Pattern")
+            await asyncio.sleep(1)
 
-        rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.cid)
+    async def sendtcpheartbeat(self):
+        while True:
+            print("Would be TCP hearbeat")
+            if self.brokerconnected:
+                packet = pdus.ACNTCPPreamble()
 
-        nullpacket = pdus.BrokerNull()
+                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.desc.cid)
 
-        packet.message = rlppacket
+                nullpacket = pdus.BrokerNull()
 
-        rlppacket.message = nullpacket
+                packet.message = rlppacket
 
-        retval = packet.serialise()
+                rlppacket.message = nullpacket
 
-        try:
-            self.brokersocket.send(retval)
-        except socket.error as e:
-            print("Error sending hearbeat packet: {}".format(e))
-        self.tcptimer = Timer(15, self.sendtcpheartbeat).start()
+                retval = packet.serialise()
+
+                try:
+                    self.brokersocket.send(retval)
+                except socket.error as e:
+                    print("Error sending hearbeat packet: {}".format(e))
+            await asyncio.sleep(15)
 
     def handlerdmnet(self, data):
         if data[0:12] is not vectors.ACNheader:
