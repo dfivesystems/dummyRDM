@@ -1,3 +1,4 @@
+import sys
 from zeroconf import ServiceBrowser, Zeroconf
 from RDMDevice import rdmdevice
 from ArtNet import artnet
@@ -18,4 +19,7 @@ def main():
     web.run()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit()
