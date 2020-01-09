@@ -1,5 +1,4 @@
-from uuid import uuid4
-from threading import Thread, Timer
+from threading import Thread, current_thread
 import socket
 import asyncio
 import ipaddress
@@ -21,17 +20,6 @@ class rdmdevice(Thread):
 
     desc = devicedescriptor.DeviceDescriptor()
     desc.sensors = [sensors.dummysensor("Sensor 1", -100, 100, -50, 50, defines.Sens_temperature,
-    cid.extend(uuid4().bytes[2:])
-    uid = cid[:6]
-
-    label = "D5 RDMNet Test Device"
-    mfr = "D5 Systems"
-    model = "Test Device"
-    softwareverslabel = "0.01 Alpha"
-    category = 0x7101
-    factorystatus = 1
-    identifystatus = 1
-    sensors = [sensors.dummysensor("Sensor 1", -100, 100, -50, 50, defines.Sens_temperature,
                                    defines.Sens_unit_centigrade, defines.Prefix_none)
                , sensors.dummysensor("Sensor 2", -100, 100, -50, 50, defines.Sens_temperature,
                                      defines.Sens_unit_centigrade, defines.Prefix_none)
@@ -95,26 +83,19 @@ class rdmdevice(Thread):
 
     def __init__(self):
         super().__init__()
+        current_thread().name = "RDM Device"
         try:
             self.brokersocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         except socket.error:
             print("Error opening RDMNet Socket")
-        self.llrpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        self.llrpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        self.llrpsocket.bind(('0.0.0.0', llrp.llrpport))
-        self.llrpsocket.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF,
-                                   socket.inet_aton('192.168.3.2'))
-        mreq = struct.pack("4s4s", socket.inet_aton(llrp.llrp_multicast_v4_request),
-                           socket.inet_aton('192.168.3.2'))
-        self.llrpsocket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
-        self.tcptimer = Timer(15, self.sendtcpheartbeat)
+        self.brokerconnected = False
         print("LLRP Listening")
 
     def run(self):
         asyncio.run(self.main())
-            data, = self.llrpsocket.recvfrom(1024)
-            llrp.handlellrp(self, data)
+            # rdmnetdata, = self.brokersocket.recv(1024)
+            # self.handlerdmnet(rdmnetdata)
 
     async def main(self):
         await asyncio.gather(self.sendtcpheartbeat(), self.llrpmain(), self.identify())
@@ -146,13 +127,13 @@ class rdmdevice(Thread):
             try:
                 packet = pdus.ACNTCPPreamble()
 
-                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.cid)
+                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.desc.cid)
                 
-                clientpacket = pdus.ClientConnect(self.scope, self.searchdomain)
+                clientpacket = pdus.ClientConnect(self.desc.scope, self.desc.searchdomain)
                 clientpacket.vector = vectors.vector_broker_connect
                 cliententry = pdus.ClientEntry()
-                cliententry.UID = self.uid
-                cliententry.CID = self.cid
+                cliententry.UID = self.desc.uid
+                cliententry.CID = self.desc.cid
                 cliententry.vector = vectors.vector_root_rpt
                 
                 packet.message = rlppacket
@@ -160,12 +141,13 @@ class rdmdevice(Thread):
                 clientpacket.message = cliententry
                 retval = packet.serialise()
                 self.brokersocket.send(retval)
+                self.brokerconnected = True
             except socket.error as e:
                 print("Error sending init_connect packet: {}".format(e))
-            self.tcptimer.start()
 
     def disconnectbroker(self, desc):
-        if self.scope == desc.scope:
+        if self.desc.scope == desc.scope:
+            self.brokerconnected = False
             self.brokersocket.shutdown()
             self.brokersocket.close()
 
