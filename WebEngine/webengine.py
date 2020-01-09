@@ -5,6 +5,9 @@ class WebServer:
     """Creates the webserver used as the control interface for dummyRDM
     """
 
+    def __init__(self):
+        pass
+
     class MainHandler(web.RequestHandler):
         def get(self):
             self.render("templates/index.html")
@@ -15,6 +18,7 @@ class WebServer:
         }
         return web.Application([
             (r"/", WebServer.MainHandler),
+
         ], **settings)
     
     def run(self):

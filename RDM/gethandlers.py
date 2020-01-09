@@ -1,5 +1,7 @@
-from RDM import checksums, rdmpacket, defines, nackcodes
-from struct import unpack, pack 
+"""Get handlers for DummyRDM Device"""
+from struct import unpack, pack
+from RDM import rdmpacket, defines, nackcodes
+
 #TODO: Personality Descriptions, Parameter Description
 
 def devreset(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
@@ -11,10 +13,10 @@ def devreset(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     if recpdu.cc == defines.CC_Set_command:
         if recpdu.pd[0] == 0x01:
             #Warm Reset
-            print("Device {}: Warm reset requested").format(self.uid.hex())
+            print("Device {}: Warm reset requested".format(self.uid.hex()))
         elif recpdu[1] == 0xFF:
             #Cold Reset
-            print("Device {}: Cold reset requested").format(self.uid.hex())
+            print("Device {}: Cold reset requested".format(self.uid.hex()))
         else:
             #Out of range NACK
             return nackreturn(self, recpdu, nackcodes.nack_data_range)
@@ -35,12 +37,12 @@ def devreset(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
 
 def devfactory(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
-    """Either sets the device to factory defaults or gets if the device is 
+    """Either sets the device to factory defaults or gets if the device is
     currently set to factory defaults
     RDM_GET = yes
     RDM_SET = yes
     """
-
+#BUG: Currently Returning with incorrect checksum - needs verification
     if recpdu.cc == defines.CC_Get_command:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 25
@@ -58,7 +60,7 @@ def devfactory(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
         if recpdu.pd[0] <= 1:
-            print("Device {}: Factory Reset set to {:02x}").format(self.uid.hex(), recpdu.pd[0])
+            print("Device {}: Factory Reset set to {:02x}".format(self.uid.hex(), recpdu.pd[0]))
             sendpdu = rdmpacket.RDMpacket()
             sendpdu.length = 24
             sendpdu.destuid = recpdu.srcuid
@@ -102,7 +104,7 @@ def devidentify(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
         if recpdu.pd[0] <= 1:
-            print("Device {}: Identify set to {:02x}").format(self.uid.hex(), recpdu.pd[0])
+            print("Device {}: Identify set to {:02x}".format(self.uid.hex(), recpdu.pd[0]))
             sendpdu = rdmpacket.RDMpacket()
             sendpdu.length = 24
             sendpdu.destuid = recpdu.srcuid
@@ -173,7 +175,6 @@ def devsoftwareversion(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket
     if recpdu.cc is not defines.CC_Get_command:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
     sendpdu = rdmpacket.RDMpacket()
-    sendpdu.length = 0x38
     sendpdu.destuid = recpdu.srcuid
     sendpdu.srcuid = self.uid
     sendpdu.tn = recpdu.tn
@@ -182,8 +183,12 @@ def devsoftwareversion(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket
     sendpdu.sub_id = 0x0000
     sendpdu.cc = 0x21
     sendpdu.pid = 0x00C0
-    sendpdu.pdl = 32
-    sendpdu.pd = (bytes('{:<32}'.format(self.softwareverslabel), 'utf8'))
+    if len(self.softwareverslabel) > 32:
+        sendpdu.pd = bytes(self.softwareverslabel[:32], 'utf-8')
+    else:
+        sendpdu.pd = bytes(self.softwareverslabel, 'utf-8') #Limit 32 Characters
+    sendpdu.pdl = len(sendpdu.pd)
+    sendpdu.length = 24+sendpdu.pdl
     sendpdu.calcchecksum()
     return sendpdu
 
@@ -524,7 +529,12 @@ def devscope(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.pid = 0x0800 
         sendpdu.pdl = 34
         sendpdu.pd = bytearray(b'\x00\x01')
-        sendpdu.pd.extend(bytes('{:<63}'.format(self.scope), 'utf8'))
+        if len(self.scope) > 63:
+            sendpdu.pd.extend(bytes(self.scope[:63], 'utf-8'))
+        else:
+            sendpdu.pd.extend(bytes(self.scope, 'utf-8'))
+            for i in range(63-len(self.scope)):
+                sendpdu.pd.extend(b'\x00')
         #Static config Type,
         sendpdu.pd.extend(b'\x01')
         #IPv4 Address
@@ -555,11 +565,11 @@ def devscope(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
 
 def devsearch(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
-    """Return an RDM packet for device scope 
+    """Return an RDM packet for device scope
     RDM_GET = yes
     RDM_SET = yes
     """
-    
+
     if recpdu.cc == defines.CC_Get_command:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.destuid = recpdu.srcuid
@@ -608,7 +618,6 @@ def sensordef(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         if sensno < len(self.sensors):
             #Ack and return definition
             sendpdu = rdmpacket.RDMpacket()
-            
             sendpdu.destuid = recpdu.srcuid
             sendpdu.srcuid = self.uid
             sendpdu.tn = recpdu.tn
@@ -657,8 +666,10 @@ def sensorval(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         else:
             #NACK
             return nackreturn(self, recpdu, nackcodes.nack_data_range)
-        
-def nackreturn(self,recpdu: rdmpacket.RDMpacket, reasoncode) -> rdmpacket.RDMpacket:
+
+def nackreturn(self, recpdu: rdmpacket.RDMpacket, reasoncode) -> rdmpacket.RDMpacket:
+    """Returns a NACK for a given rdmpacket with a reason"""
+
     print("Nacking PID {:04x}".format(recpdu.pid))
     sendpdu = rdmpacket.RDMpacket()
     sendpdu.length = 0x1a

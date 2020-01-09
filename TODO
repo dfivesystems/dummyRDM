@@ -2,6 +2,7 @@ RDMDevice:
     Add More Pids
     Enable loading from template
     Add Custom PIDS
+    Messaging
 
 ArtNet:
     handlers:
