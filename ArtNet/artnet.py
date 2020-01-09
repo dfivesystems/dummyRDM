@@ -2,7 +2,7 @@ import sys
 import socket
 import ipaddress
 from struct import unpack
-from threading import Thread
+from threading import Thread, current_thread
 from ArtNet import opcodes, packets, handlers, ports
 
 class dummyartnode(Thread):
@@ -22,6 +22,7 @@ class dummyartnode(Thread):
         """Initialise the Art-Net Node with a hostaddress(CIDR notation), startuniverse(optional) and port count(optional)"""
 
         super().__init__()
+        current_thread().name = "Art-Net Engine"
         self.devicestore = devicestore
         self.HOST = ipaddress.IPv4Interface(hostaddress)
         self.startuniverse = startuniverse
