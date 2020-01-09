@@ -5,12 +5,8 @@ class ZConfListener:
         self.devicestore = devicestore
 
     def remove_service(self, zeroconf, srvtype, name):
-        pass
-        # info = zeroconf.get_service_info(srvtype, name)
-        # desc = brokerdescription.BrokerDescription()
-        # desc.fromzconfinfo(info)
-        # for i in self.devicestore:
-        #     self.devicestore[i].disconnectbroker(desc)
+        for i in self.devicestore:
+            self.devicestore[i].disconnectbroker()
 
     def add_service(self, zeroconf, srvtype, name):
         info = zeroconf.get_service_info(srvtype, name)

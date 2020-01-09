@@ -113,9 +113,8 @@ class RdmDevice(Thread):
     def newbroker(self, broker_descriptor):
         self.rdmnet = asyncio.run_coroutine_threadsafe(asyncrdmnet.listenRDMNet(self, self.device_descriptor, broker_descriptor), self.loop)
 
-    def disconnectbroker(self, broker_descriptor):
-        #This can be allowed to pass for now but may be useful in the future
-        pass
+    def disconnectbroker(self):
+        self.rdmnet.cancel()
 
     async def identify(self):
         while True:
