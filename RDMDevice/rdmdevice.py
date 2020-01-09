@@ -2,8 +2,10 @@ from uuid import uuid4
 from threading import Thread, Timer
 import socket
 import struct
+import ipaddress
 from RDM import gethandlers, pids, nackcodes, sensors, rdmpacket, defines
 from LLRP import llrp
+from RDMNet import pdus, vectors, brokerhandlers
 
 
 class rdmdevice(Thread):
@@ -28,9 +30,12 @@ class rdmdevice(Thread):
     category = 0x7101
     factorystatus = 1
     identifystatus = 1
-    sensors = [sensors.dummysensor("Sensor 1", -100, 100, -50, 50, defines.Sens_temperature, defines.Sens_unit_centigrade, defines.Prefix_none)
-    , sensors.dummysensor("Sensor 2", -100, 100, -50, 50, defines.Sens_temperature, defines.Sens_unit_centigrade, defines.Prefix_none)
-    , sensors.dummysensor("Sensor 3", -100, 100, -50, 50, defines.Sens_temperature, defines.Sens_unit_centigrade, defines.Prefix_none)]
+    sensors = [sensors.dummysensor("Sensor 1", -100, 100, -50, 50, defines.Sens_temperature,
+                                   defines.Sens_unit_centigrade, defines.Prefix_none)
+               , sensors.dummysensor("Sensor 2", -100, 100, -50, 50, defines.Sens_temperature,
+                                     defines.Sens_unit_centigrade, defines.Prefix_none)
+               , sensors.dummysensor("Sensor 3", -100, 100, -50, 50, defines.Sens_temperature,
+                                     defines.Sens_unit_centigrade, defines.Prefix_none)]
 
     currentpers = 0
     perslist = {
@@ -89,19 +94,30 @@ class rdmdevice(Thread):
 
     def __init__(self):
         super().__init__()
+        try:
+            self.brokersocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except socket.error:
+            print("Error opening RDMNet Socket")
         self.llrpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.llrpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.llrpsocket.bind(('0.0.0.0', llrp.llrpport))
-        self.llrpsocket.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton('192.168.1.195'))
-        mreq = struct.pack("4s4s", socket.inet_aton(llrp.llrp_multicast_v4_request), socket.inet_aton('192.168.1.195'))
+        self.llrpsocket.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF,
+                                   socket.inet_aton('192.168.3.2'))
+        mreq = struct.pack("4s4s", socket.inet_aton(llrp.llrp_multicast_v4_request),
+                           socket.inet_aton('192.168.3.2'))
         self.llrpsocket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
+        self.tcptimer = Timer(15, self.sendtcpheartbeat)
         print("LLRP Listening")
 
     def run(self):
         while True:
-            data, addr = self.llrpsocket.recvfrom(1024)
+            data, = self.llrpsocket.recvfrom(1024)
             llrp.handlellrp(self, data)
+
+            rdmnetdata, = self.brokersocket.recv(1024)
+            self.handlerdmnet(data)
+
 
     def getpid(self, pid, recpdu) -> rdmpacket.RDMpacket:
         """Checks to see if either the LLRP PIDS or the RDM-only PIDS contains the
@@ -115,4 +131,63 @@ class rdmdevice(Thread):
             return func(self, recpdu)
         else:
             return gethandlers.nackreturn(self, recpdu, nackcodes.nack_unknown)
-       
+
+    def newbroker(self, desc):
+        if self.scope == desc.scope:
+            brokeraddress = ipaddress.ip_address(desc.address)
+            try:
+                self.brokersocket.connect((brokeraddress.compressed, desc.port))
+            except socket.error as e:
+                print("Error connecting to broker {}: {}".format(desc.hostname, e))
+            try:
+                packet = pdus.ACNTCPPreamble()
+
+                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.cid)
+                
+                clientpacket = pdus.ClientConnect(self.scope, self.searchdomain)
+                clientpacket.vector = vectors.vector_broker_connect
+                cliententry = pdus.ClientEntry()
+                cliententry.UID = self.uid
+                cliententry.CID = self.cid
+                cliententry.vector = vectors.vector_root_rpt
+                
+                packet.message = rlppacket
+                rlppacket.message = clientpacket
+                clientpacket.message = cliententry
+                retval = packet.serialise()
+                self.brokersocket.send(retval)
+            except socket.error as e:
+                print("Error sending init_connect packet: {}".format(e))
+            self.tcptimer.start()
+
+    def disconnectbroker(self, desc):
+        if self.scope == desc.scope:
+            self.brokersocket.shutdown()
+            self.brokersocket.close()
+
+    def sendtcpheartbeat(self):
+        packet = pdus.ACNTCPPreamble()
+
+        rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.cid)
+
+        nullpacket = pdus.BrokerNull()
+
+        packet.message = rlppacket
+
+        rlppacket.message = nullpacket
+
+        retval = packet.serialise()
+
+        try:
+            self.brokersocket.send(retval)
+        except socket.error as e:
+            print("Error sending hearbeat packet: {}".format(e))
+        self.tcptimer = Timer(15, self.sendtcpheartbeat).start()
+
+    def handlerdmnet(self, data):
+        if data[0:12] is not vectors.ACNheader:
+            print("Incorrect ACN Header")
+            return
+        if data[12:16] != len(data[16:]):
+            print("Preamble length incorrect")
+            return

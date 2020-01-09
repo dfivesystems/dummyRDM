@@ -1,14 +1,17 @@
+from zeroconf import ServiceBrowser, Zeroconf
 from RDMDevice import rdmdevice
 from ArtNet import artnet
-from LLRP import llrp
-import _thread
 from WebEngine import webengine
+from RDMNet import zconflistener
 
 #from RDMnet import rdmnet
 
 devicestore = dict()
 def main():
-    artnetengine = artnet.dummyartnode("192.168.1.195/24", devicestore, 0, 14)
+    zeroconf = Zeroconf()
+    listener = zconflistener.ZConfListener(devicestore)
+    browser = ServiceBrowser(zeroconf, "_rdmnet._tcp.local.", listener)
+    artnetengine = artnet.dummyartnode("192.168.3.2/24", devicestore, 0, 14)
     artnetengine.start()
     devicestore[0] = rdmdevice.rdmdevice()
     devicestore[0].start()
