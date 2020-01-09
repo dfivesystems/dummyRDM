@@ -1,4 +1,4 @@
-from RDMNetCommon import vectors
+from RDMNet import vectors
 from RDM import rdmpacket
 
 class ACNUDPPreamble:

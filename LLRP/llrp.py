@@ -1,9 +1,6 @@
-import struct
-import socket
-from threading import Thread
-from RDM import gethandlers, sethandlers, nackcodes, rdmpacket
+from RDM import gethandlers, nackcodes, rdmpacket
 from LLRP import pdus
-from RDMNetCommon import vectors
+from RDMNet import vectors
 
 llrpport = 5569
 llrptimeout = 2000
