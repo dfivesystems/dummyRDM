@@ -75,7 +75,7 @@ def opTodRequesthandler(self, raw_data):
                 returnpacket.blockcount = len(self.ports[portnum].tod) // 200
                 returnpacket.uidcount = len(self.ports[portnum].tod)
                 for deviceid in self.ports[portnum].tod:
-                    returnpacket.tod.append(self.devicestore[deviceid].uid)
+                    returnpacket.tod.append(self.devicestore[deviceid].device_descriptor.uid)
             #Send the return packet for this address
                 tosend = returnpacket.serialise()
                 try:
@@ -100,7 +100,7 @@ def opRdmHandler(self, raw_data):
     if not packet.rdmpd.checkchecksum():
         return None
     for x in self.devicestore:
-        if self.devicestore[x].uid == packet.rdmpd.destuid:
+        if self.devicestore[x].device_descriptor.uid == packet.rdmpd.destuid:
             #Process the PID
             pd = self.devicestore[x].getpid(packet.rdmpd.pid, packet.rdmpd)
             if pd is not None:

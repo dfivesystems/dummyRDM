@@ -1,4 +1,5 @@
 from uuid import uuid4
+
 class DeviceDescriptor:
     def __init__(self):
         # These parameters are to define the basic features for the device

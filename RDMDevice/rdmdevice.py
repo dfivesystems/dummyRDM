@@ -18,8 +18,8 @@ class rdmdevice(Thread):
 
     """
 
-    desc = devicedescriptor.DeviceDescriptor()
-    desc.sensors = [sensors.dummysensor("Sensor 1", -100, 100, -50, 50, defines.Sens_temperature,
+    device_descriptor = devicedescriptor.DeviceDescriptor()
+    device_descriptor.sensors = [sensors.dummysensor("Sensor 1", -100, 100, -50, 50, defines.Sens_temperature,
                                    defines.Sens_unit_centigrade, defines.Prefix_none)
                , sensors.dummysensor("Sensor 2", -100, 100, -50, 50, defines.Sens_temperature,
                                      defines.Sens_unit_centigrade, defines.Prefix_none)
@@ -27,29 +27,29 @@ class rdmdevice(Thread):
                                      defines.Sens_unit_centigrade, defines.Prefix_none)]
 
     currentpers = 0
-    desc.perslist = {
+    device_descriptor.perslist = {
         "Sample Personality": 4,
         "Another Personality": 8,
     }
 
-    desc.dmxaddress = 1
-    desc.dmxfootprint = 4
-    desc.lamphours = 1
-    desc.lampstrikes = 1
-    desc.devhours = 1
-    desc.powercycles = 1
+    device_descriptor.dmxaddress = 1
+    device_descriptor.dmxfootprint = 4
+    device_descriptor.lamphours = 1
+    device_descriptor.lampstrikes = 1
+    device_descriptor.devhours = 1
+    device_descriptor.powercycles = 1
     
     #LLRP/RDMNet Details
-    desc.hwaddr = ""
-    desc.devtype = 0
-    desc.brokerip = ""
-    desc.searchdomain = ".local"
-    desc.scope = "default"
+    device_descriptor.hwaddr = ""
+    device_descriptor.devtype = 0
+    device_descriptor.brokerip = ""
+    device_descriptor.searchdomain = ".local"
+    device_descriptor.scope = "default"
 
     # These dicts contains lists of device supported PIDS
 
     #llrpswitcher contains PIDs that are supported by both LLRP and Art/RDMNet targets
-    desc.llrpswitcher = {
+    device_descriptor.llrpswitcher = {
         pids.RDM_device_info: gethandlers.devinfo,
         pids.RDM_reset_device: gethandlers.devreset,
         pids.RDM_factory_defaults: gethandlers.devfactory,
@@ -67,7 +67,7 @@ class rdmdevice(Thread):
     }
 
     #getswitcher contains PIDs that are supported by ONLY Art/RDMNet targets
-    desc.getswitcher = {
+    device_descriptor.getswitcher = {
         pids.RDM_software_version_label: gethandlers.devsoftwareversion,
         pids.RDM_dmx_start_address: gethandlers.dmxaddress,
         pids.RDM_device_hours: gethandlers.devhours,
@@ -102,38 +102,41 @@ class rdmdevice(Thread):
 
     async def llrpmain(self):
         loop = asyncio.get_running_loop()
-        protocol = await asyncllrp.listenllrp(self, loop, '192.168.3.2', self.desc)
+        protocol = await asyncllrp.listenllrp(self, loop, '192.168.3.2', self.device_descriptor)
+
+    async def rdmnetmain(self):
+        pass
 
     def getpid(self, pid, recpdu) -> rdmpacket.RDMpacket:
         """Checks to see if either the LLRP PIDS or the RDM-only PIDS contains the
         requested PID. If they do, an RDM PDU is returned to the requesting
         engine, to be sent out from there. Used by Art-Net and RDMNet responders"""
 
-        func = self.desc.llrpswitcher.get(pid, "NACK")  
+        func = self.device_descriptor.llrpswitcher.get(pid, "NACK")  
         if func is "NACK":
-            func = self.desc.getswitcher.get(pid, "NACK")
+            func = self.device_descriptor.getswitcher.get(pid, "NACK")
         if func is not "NACK":
             return func(self, recpdu)
         else:
             return gethandlers.nackreturn(self, recpdu, nackcodes.nack_unknown)
 
-    def newbroker(self, desc):
-        if self.desc.scope == desc.scope:
-            brokeraddress = ipaddress.ip_address(desc.address)
+    def newbroker(self, device_descriptor):
+        if self.device_descriptor.scope == device_descriptor.scope:
+            brokeraddress = ipaddress.ip_address(device_descriptor.address)
             try:
-                self.brokersocket.connect((brokeraddress.compressed, desc.port))
+                self.brokersocket.connect((brokeraddress.compressed, device_descriptor.port))
             except socket.error as e:
-                print("Error connecting to broker {}: {}".format(desc.hostname, e))
+                print("Error connecting to broker {}: {}".format(device_descriptor.hostname, e))
             try:
                 packet = pdus.ACNTCPPreamble()
 
-                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.desc.cid)
+                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.device_descriptor.cid)
                 
-                clientpacket = pdus.ClientConnect(self.desc.scope, self.desc.searchdomain)
+                clientpacket = pdus.ClientConnect(self.device_descriptor.scope, self.device_descriptor.searchdomain)
                 clientpacket.vector = vectors.vector_broker_connect
                 cliententry = pdus.ClientEntry()
-                cliententry.UID = self.desc.uid
-                cliententry.CID = self.desc.cid
+                cliententry.UID = self.device_descriptor.uid
+                cliententry.CID = self.device_descriptor.cid
                 cliententry.vector = vectors.vector_root_rpt
                 
                 packet.message = rlppacket
@@ -145,15 +148,15 @@ class rdmdevice(Thread):
             except socket.error as e:
                 print("Error sending init_connect packet: {}".format(e))
 
-    def disconnectbroker(self, desc):
-        if self.desc.scope == desc.scope:
+    def disconnectbroker(self, device_descriptor):
+        if self.device_descriptor.scope == device_descriptor.scope:
             self.brokerconnected = False
             self.brokersocket.shutdown()
             self.brokersocket.close()
 
     async def identify(self):
         while True:
-            if self.desc.identifystatus is 0x01:
+            if self.device_descriptor.identifystatus is 0x01:
                 print("Annoying Identify Pattern")
             await asyncio.sleep(1)
 
@@ -163,7 +166,7 @@ class rdmdevice(Thread):
             if self.brokerconnected:
                 packet = pdus.ACNTCPPreamble()
 
-                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.desc.cid)
+                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.device_descriptor.cid)
 
                 nullpacket = pdus.BrokerNull()
 
