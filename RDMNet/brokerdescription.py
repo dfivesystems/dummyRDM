@@ -1,3 +1,4 @@
+import ipaddress
 class BrokerDescription:
     def __init__(self):
         self.hostname = None
@@ -12,7 +13,7 @@ class BrokerDescription:
     
     def fromzconfinfo(self, info):
         self.hostname = info.name
-        self.address = info.address
+        self.address = ipaddress.ip_address(info.address)
         self.port = info.port
         self.server = info.server
         self.scope = info.properties[b'ConfScope'].decode("utf-8")

@@ -4,15 +4,15 @@ import asyncio
 import ipaddress
 from RDM import gethandlers, pids, nackcodes, sensors, rdmpacket, defines
 from LLRP import asyncllrp
-from RDMNet import pdus, vectors, brokerhandlers
+from RDMNet import asyncrdmnet
 from RDMDevice import devicedescriptor
 
 
-class rdmdevice(Thread):
+class RdmDevice(Thread):
     """Creates a dummy RDM device
 
-    This class creates a dummy RDM fixture with it's own UID, CID, PIDs. 
-    This is designed to be used in conjunction with the DummyArtRDM and 
+    This class creates a dummy RDM fixture with it's own UID, CID, PIDs.
+    This is designed to be used in conjunction with the DummyArtRDM and
     DummyRDMNet classes to function as a set of test devices. The LLRP
     responder is built into the rdmdevice class
 
@@ -84,28 +84,18 @@ class rdmdevice(Thread):
     def __init__(self):
         super().__init__()
         current_thread().name = "RDM Device"
-        try:
-            self.brokersocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        except socket.error:
-            print("Error opening RDMNet Socket")
-
-        self.brokerconnected = False
-        print("LLRP Listening")
+        self.loop = None
 
     def run(self):
         asyncio.run(self.main())
-            # rdmnetdata, = self.brokersocket.recv(1024)
-            # self.handlerdmnet(rdmnetdata)
 
     async def main(self):
-        await asyncio.gather(self.sendtcpheartbeat(), self.llrpmain(), self.identify())
+        self.loop = asyncio.get_running_loop()
+        await asyncio.gather(self.llrpmain(), self.identify())
 
     async def llrpmain(self):
         loop = asyncio.get_running_loop()
-        protocol = await asyncllrp.listenllrp(self, loop, '192.168.3.2', self.device_descriptor)
-
-    async def rdmnetmain(self):
-        pass
+        protocol = await asyncllrp.listenllrp(self, loop, '192.168.3.1', self.device_descriptor)
 
     def getpid(self, pid, recpdu) -> rdmpacket.RDMpacket:
         """Checks to see if either the LLRP PIDS or the RDM-only PIDS contains the
@@ -120,39 +110,12 @@ class rdmdevice(Thread):
         else:
             return gethandlers.nackreturn(self, recpdu, nackcodes.nack_unknown)
 
-    def newbroker(self, device_descriptor):
-        if self.device_descriptor.scope == device_descriptor.scope:
-            brokeraddress = ipaddress.ip_address(device_descriptor.address)
-            try:
-                self.brokersocket.connect((brokeraddress.compressed, device_descriptor.port))
-            except socket.error as e:
-                print("Error connecting to broker {}: {}".format(device_descriptor.hostname, e))
-            try:
-                packet = pdus.ACNTCPPreamble()
+    def newbroker(self, broker_descriptor):
+        self.rdmnet = asyncio.run_coroutine_threadsafe(asyncrdmnet.listenRDMNet(self, self.device_descriptor, broker_descriptor), self.loop)
 
-                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.device_descriptor.cid)
-                
-                clientpacket = pdus.ClientConnect(self.device_descriptor.scope, self.device_descriptor.searchdomain)
-                clientpacket.vector = vectors.vector_broker_connect
-                cliententry = pdus.ClientEntry()
-                cliententry.UID = self.device_descriptor.uid
-                cliententry.CID = self.device_descriptor.cid
-                cliententry.vector = vectors.vector_root_rpt
-                
-                packet.message = rlppacket
-                rlppacket.message = clientpacket
-                clientpacket.message = cliententry
-                retval = packet.serialise()
-                self.brokersocket.send(retval)
-                self.brokerconnected = True
-            except socket.error as e:
-                print("Error sending init_connect packet: {}".format(e))
-
-    def disconnectbroker(self, device_descriptor):
-        if self.device_descriptor.scope == device_descriptor.scope:
-            self.brokerconnected = False
-            self.brokersocket.shutdown()
-            self.brokersocket.close()
+    def disconnectbroker(self, broker_descriptor):
+        #This can be allowed to pass for now but may be useful in the future
+        pass
 
     async def identify(self):
         while True:
@@ -160,32 +123,3 @@ class rdmdevice(Thread):
                 print("Annoying Identify Pattern")
             await asyncio.sleep(1)
 
-    async def sendtcpheartbeat(self):
-        while True:
-            print("Would be TCP hearbeat")
-            if self.brokerconnected:
-                packet = pdus.ACNTCPPreamble()
-
-                rlppacket = pdus.RLPPDU(vectors.vector_root_broker, self.device_descriptor.cid)
-
-                nullpacket = pdus.BrokerNull()
-
-                packet.message = rlppacket
-
-                rlppacket.message = nullpacket
-
-                retval = packet.serialise()
-
-                try:
-                    self.brokersocket.send(retval)
-                except socket.error as e:
-                    print("Error sending hearbeat packet: {}".format(e))
-            await asyncio.sleep(15)
-
-    def handlerdmnet(self, data):
-        if data[0:12] is not vectors.ACNheader:
-            print("Incorrect ACN Header")
-            return
-        if data[12:16] != len(data[16:]):
-            print("Preamble length incorrect")
-            return
