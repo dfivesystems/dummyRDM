@@ -3,7 +3,7 @@ from uuid import uuid4
 class DeviceDescriptor:
     def __init__(self):
         # These parameters are to define the basic features for the device
-        self.cid = bytearray(b'\xD5\xD5')
+        self.cid = bytearray(b'\x44\x35')
         self.cid.extend(uuid4().bytes[2:])
         self.uid = self.cid[:6]
 
@@ -30,7 +30,7 @@ class DeviceDescriptor:
         self.hwaddr = ""
         self.devtype = 0
         self.brokerip = ""
-        self.searchdomain = ".local"
+        self.searchdomain = "local."
         self.scope = "default"
 
         # These dicts contains lists of device supported PIDS
