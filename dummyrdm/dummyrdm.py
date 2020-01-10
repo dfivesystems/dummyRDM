@@ -5,8 +5,10 @@ from ArtNet import artnet
 from WebEngine import webengine
 from RDMNet import zconflistener
 
+#TODO: Make this ... better
+
 devicestore = dict()
-def main():
+def dummyrdm():
     zeroconf = Zeroconf()
     listener = zconflistener.ZConfListener(devicestore)
     browser = ServiceBrowser(zeroconf, "_rdmnet._tcp.local.", listener)
@@ -20,6 +22,6 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        dummyrdm()
     except KeyboardInterrupt:
         sys.exit()
