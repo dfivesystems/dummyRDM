@@ -1,5 +1,7 @@
+"""Broker Description"""
 import ipaddress
 class BrokerDescription:
+    """Placeholder for our broker information for further processing"""
     def __init__(self):
         self.hostname = None
         self.address = None
@@ -10,8 +12,9 @@ class BrokerDescription:
         self.model = None
         self.manuf = None
         self.port = None
-    
+
     def fromzconfinfo(self, info):
+        """Creates a broker description from a zconf info object"""
         self.hostname = info.name
         self.address = ipaddress.ip_address(info.address)
         self.port = info.port

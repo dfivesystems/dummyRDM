@@ -1,3 +1,8 @@
+"""RDMNet Vectors.
+
+All vectors defined in E1.33
+"""
+
 ACNheader = b'\x41\x53\x43\x2d\x45\x31\x2e\x31\x37\x00\x00\x00'
 
 vector_root_llrp = b'\x00\x00\x00\x0A'

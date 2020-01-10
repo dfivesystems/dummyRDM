@@ -28,4 +28,7 @@ WebEngine:
     Add/remove device
     Save device as JSON
     
-Documentation
+Documentation:
+    Type hinting of class members and function arguments
+    Keep docstrings up to date
+    More detail in docstrings?

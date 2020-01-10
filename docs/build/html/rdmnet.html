@@ -1,0 +1,357 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DummyRDM RDMNet &#8212; DummyRDM 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="webengine.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="rdmdevice.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="dummyrdm-rdmnet">
+<h1>DummyRDM RDMNet<a class="headerlink" href="#dummyrdm-rdmnet" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-RDMNet.asyncrdmnet">
+<span id="asyncrdmnet"></span><h2>asyncrdmnet<a class="headerlink" href="#module-RDMNet.asyncrdmnet" title="Permalink to this headline">¶</a></h2>
+<p>Asynchronous RDMNet Implementation.</p>
+<p>This module is an asynchronus implementation of E1.33 RDMNet.</p>
+<dl class="simple">
+<dt>Example:</dt><dd><p>This module is intended to be used as part of an RDMDevice,
+which is running the Asynio event loop. When calling listenRDMNet,
+it is expected that there will be a DeviceDescriptor and a
+BrokerDescriptor for passing to the relevant handlers</p>
+</dd>
+</dl>
+<dl class="class">
+<dt id="RDMNet.asyncrdmnet.AsyncRDMNet">
+<em class="property">class </em><code class="sig-prename descclassname">RDMNet.asyncrdmnet.</code><code class="sig-name descname">AsyncRDMNet</code><span class="sig-paren">(</span><em class="sig-param">on_con_lost</em>, <em class="sig-param">device_descriptor</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.asyncrdmnet.AsyncRDMNet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Re-implementation of Asyncio streaming protocol for RDMNet.</p>
+<dl class="method">
+<dt id="RDMNet.asyncrdmnet.AsyncRDMNet.connection_lost">
+<code class="sig-name descname">connection_lost</code><span class="sig-paren">(</span><em class="sig-param">exc</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.asyncrdmnet.AsyncRDMNet.connection_lost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the connection is lost or closed.</p>
+<p>The argument is an exception object or None (the latter
+meaning a regular EOF is received or the connection was
+aborted or closed).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="RDMNet.asyncrdmnet.AsyncRDMNet.connection_made">
+<code class="sig-name descname">connection_made</code><span class="sig-paren">(</span><em class="sig-param">transport: asyncio.transports.Transport</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.asyncrdmnet.AsyncRDMNet.connection_made" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when a connection is made.</p>
+<p>The argument is the transport representing the pipe connection.
+To receive data, wait for data_received() calls.
+When the connection is closed, connection_lost() is called.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="RDMNet.asyncrdmnet.AsyncRDMNet.data_received">
+<code class="sig-name descname">data_received</code><span class="sig-paren">(</span><em class="sig-param">data</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.asyncrdmnet.AsyncRDMNet.data_received" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when some data is received.</p>
+<p>The argument is a bytes object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="RDMNet.asyncrdmnet.AsyncRDMNet.sendtcpheartbeat">
+<em class="property">async </em><code class="sig-name descname">sendtcpheartbeat</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.asyncrdmnet.AsyncRDMNet.sendtcpheartbeat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends RDMNet heartbeat.</p>
+<p>Sends a vector_broker_null packet every 15s as defined by E.133
+to keep the TCP connection alive.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="RDMNet.asyncrdmnet.listenRDMNet">
+<em class="property">async </em><code class="sig-prename descclassname">RDMNet.asyncrdmnet.</code><code class="sig-name descname">listenRDMNet</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">device_descriptor</em>, <em class="sig-param">broker_descriptor</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.asyncrdmnet.listenRDMNet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the RDMNet listener task within an existing event loop.</p>
+<p>Creates an RDMNet listener in an event loop derived from get_running_loop()
+On a loss of connection of the connection endpoint, the transport will close
+and the task will be cancelled.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>device_descriptor (RDMDevice.devicedescriptor.DeviceDescriptor):</dt><dd><p>A device descriptor to pass to the Protocol for handling.</p>
+</dd>
+<dt>broker_descriptor (RDMNet.brokerdescription.BrokerDescriptor):</dt><dd><p>A broker descriptor for initiating the connection.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="broker-descriptor">
+<h2>Broker descriptor<a class="headerlink" href="#broker-descriptor" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-RDMNet.brokerhandlers">
+<span id="broker-pdu-handlers"></span><h2>Broker PDU handlers<a class="headerlink" href="#module-RDMNet.brokerhandlers" title="Permalink to this headline">¶</a></h2>
+<p>RDMNet Broker Handlers.</p>
+<p>A selection of handlers for E1.33 RDMNet broker protocol. Currently
+the only handlers implemented are broker_null and connect_reply, as
+these are the minimum required for a device.</p>
+<dl class="simple">
+<dt>Todo:</dt><dd><ul class="simple">
+<li><p>Implement Broker redirect vectors</p></li>
+<li><p>Implement Dynamic UIDs maybe?</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="function">
+<dt id="RDMNet.brokerhandlers.broker_connect_reply">
+<code class="sig-prename descclassname">RDMNet.brokerhandlers.</code><code class="sig-name descname">broker_connect_reply</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.brokerhandlers.broker_connect_reply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles the broker_connect_reply vector.</p>
+<dl class="simple">
+<dt>Todo:</dt><dd><ul class="simple">
+<li><p>Report the broker details</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="RDMNet.brokerhandlers.broker_null">
+<code class="sig-prename descclassname">RDMNet.brokerhandlers.</code><code class="sig-name descname">broker_null</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.brokerhandlers.broker_null" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles the broker_null (heartbeat) vector.</p>
+<dl class="simple">
+<dt>Todo:</dt><dd><ul class="simple">
+<li><p>Reset the heatbeat timer for the connection.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="RDMNet.brokerhandlers.handle">
+<code class="sig-prename descclassname">RDMNet.brokerhandlers.</code><code class="sig-name descname">handle</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.brokerhandlers.handle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main handler for E1.33 RDMnet Broker PDUs.
+Switches the handler based on the broker vector
+as defined in RDMNet.vectors.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-RDMNet.pdus">
+<span id="rdmnet-pdus"></span><h2>RDMNet PDUs<a class="headerlink" href="#module-RDMNet.pdus" title="Permalink to this headline">¶</a></h2>
+<p>E1.33 RDMNet PDU definitions
+Any PDUs contained here should have a serialise() function and
+a self.message object if appropriate (nested PDUs)
+Todo:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Add Message argument to constructors</p></li>
+<li><p>Allow ACNTCPPreamble to have multiple nested RLP PDUs</p></li>
+<li><p>Implement de-serialise methods</p></li>
+</ul>
+</div></blockquote>
+<dl class="class">
+<dt id="RDMNet.pdus.ACNTCPPreamble">
+<em class="property">class </em><code class="sig-prename descclassname">RDMNet.pdus.</code><code class="sig-name descname">ACNTCPPreamble</code><a class="headerlink" href="#RDMNet.pdus.ACNTCPPreamble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for ACNTCPPreamble data</p>
+<dl class="method">
+<dt id="RDMNet.pdus.ACNTCPPreamble.serialise">
+<code class="sig-name descname">serialise</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.pdus.ACNTCPPreamble.serialise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialises the PDU, including any nested PDUs</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="RDMNet.pdus.BrokerNull">
+<em class="property">class </em><code class="sig-prename descclassname">RDMNet.pdus.</code><code class="sig-name descname">BrokerNull</code><a class="headerlink" href="#RDMNet.pdus.BrokerNull" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for a Broker Null (hearbeat) PDU</p>
+<dl class="method">
+<dt id="RDMNet.pdus.BrokerNull.serialise">
+<code class="sig-name descname">serialise</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.pdus.BrokerNull.serialise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialises the PDU, this PDU has no nested options</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="RDMNet.pdus.ClientConnect">
+<em class="property">class </em><code class="sig-prename descclassname">RDMNet.pdus.</code><code class="sig-name descname">ClientConnect</code><span class="sig-paren">(</span><em class="sig-param">scope</em>, <em class="sig-param">searchdomain</em>, <em class="sig-param">connectionflags=0</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.pdus.ClientConnect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for a Client Connect PDU</p>
+<dl class="method">
+<dt id="RDMNet.pdus.ClientConnect.serialise">
+<code class="sig-name descname">serialise</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.pdus.ClientConnect.serialise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialises the PDU, including any nested PDUs</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="RDMNet.pdus.ClientEntry">
+<em class="property">class </em><code class="sig-prename descclassname">RDMNet.pdus.</code><code class="sig-name descname">ClientEntry</code><a class="headerlink" href="#RDMNet.pdus.ClientEntry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for a Client Entry PDU</p>
+<dl class="method">
+<dt id="RDMNet.pdus.ClientEntry.serialise">
+<code class="sig-name descname">serialise</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.pdus.ClientEntry.serialise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialises the PDU, this PDU has no nested options</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="RDMNet.pdus.ConnectReply">
+<em class="property">class </em><code class="sig-prename descclassname">RDMNet.pdus.</code><code class="sig-name descname">ConnectReply</code><a class="headerlink" href="#RDMNet.pdus.ConnectReply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for a Connect Reply PDU</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="RDMNet.pdus.RLPPDU">
+<em class="property">class </em><code class="sig-prename descclassname">RDMNet.pdus.</code><code class="sig-name descname">RLPPDU</code><span class="sig-paren">(</span><em class="sig-param">vector</em>, <em class="sig-param">CID</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.pdus.RLPPDU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for an RLP PDU</p>
+<dl class="method">
+<dt id="RDMNet.pdus.RLPPDU.serialise">
+<code class="sig-name descname">serialise</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.pdus.RLPPDU.serialise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialises the PDU, including any nested PDUs</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-RDMNet.rpthandlers">
+<span id="rpt-pdu-handlers"></span><h2>RPT PDU handlers<a class="headerlink" href="#module-RDMNet.rpthandlers" title="Permalink to this headline">¶</a></h2>
+<p>RDMNet RPT Handlers.
+A selection of functions for handling E1.33 RDMNet RPT PDUS.
+Where appropriate, functions pass to RDM handlers to modify/exchange
+device attributes.</p>
+<p>It is expected that data will be passed to these handlers in their full
+form, including the RLP preamble and RLP PDU.</p>
+<dl class="function">
+<dt id="RDMNet.rpthandlers.handle">
+<code class="sig-prename descclassname">RDMNet.rpthandlers.</code><code class="sig-name descname">handle</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.rpthandlers.handle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switches handler based on RPT PDU vector.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="RDMNet.rpthandlers.rptnotification">
+<code class="sig-prename descclassname">RDMNet.rpthandlers.</code><code class="sig-name descname">rptnotification</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.rpthandlers.rptnotification" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes an RPT Notification PDU</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="RDMNet.rpthandlers.rptrequest">
+<code class="sig-prename descclassname">RDMNet.rpthandlers.</code><code class="sig-name descname">rptrequest</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.rpthandlers.rptrequest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes an RPT Request PDU</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="RDMNet.rpthandlers.rptstatus">
+<code class="sig-prename descclassname">RDMNet.rpthandlers.</code><code class="sig-name descname">rptstatus</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="headerlink" href="#RDMNet.rpthandlers.rptstatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes an RPT Status PDU</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-RDMNet.vectors">
+<span id="vectors"></span><h2>Vectors<a class="headerlink" href="#module-RDMNet.vectors" title="Permalink to this headline">¶</a></h2>
+<p>RDMNet Vectors.</p>
+<p>All vectors defined in E1.33</p>
+</div>
+<div class="section" id="module-RDMNet.zconflistener">
+<span id="zconf-listener"></span><h2>Zconf Listener<a class="headerlink" href="#module-RDMNet.zconflistener" title="Permalink to this headline">¶</a></h2>
+<p>A zeroconf listener for an RDMNet device.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">DummyRDM</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">DummyRDM RDMNet</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-RDMNet.asyncrdmnet">asyncrdmnet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#broker-descriptor">Broker descriptor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-RDMNet.brokerhandlers">Broker PDU handlers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-RDMNet.pdus">RDMNet PDUs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-RDMNet.rpthandlers">RPT PDU handlers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-RDMNet.vectors">Vectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-RDMNet.zconflistener">Zconf Listener</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="rdmdevice.html" title="previous chapter">&lt;no title&gt;</a></li>
+      <li>Next: <a href="webengine.html" title="next chapter">&lt;no title&gt;</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, David McCulloch, D5 Systems Ltd.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/rdmnet.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

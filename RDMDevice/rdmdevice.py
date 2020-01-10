@@ -1,7 +1,6 @@
+"""An RDMNet Device"""
 from threading import Thread, current_thread
-import socket
 import asyncio
-import ipaddress
 from RDM import gethandlers, pids, nackcodes, sensors, rdmpacket, defines
 from LLRP import asyncllrp
 from RDMNet import asyncrdmnet
@@ -13,9 +12,12 @@ class RdmDevice(Thread):
 
     This class creates a dummy RDM fixture with it's own UID, CID, PIDs.
     This is designed to be used in conjunction with the DummyArtRDM and
-    DummyRDMNet classes to function as a set of test devices. The LLRP
-    responder is built into the rdmdevice class
+    DummyRDMNet classes to function as a set of test devices. Each RDMDevic
+    has built-in LLRP and RDMNet responders.
 
+    Todo:
+        * Implement DeviceDescriptor in __init__() for use with webengine/loading
+        * Allow passing of IPaddress to LLRP
     """
 
     device_descriptor = devicedescriptor.DeviceDescriptor()
@@ -38,7 +40,7 @@ class RdmDevice(Thread):
     device_descriptor.lampstrikes = 1
     device_descriptor.devhours = 1
     device_descriptor.powercycles = 1
-    
+
     #LLRP/RDMNet Details
     device_descriptor.hwaddr = ""
     device_descriptor.devtype = 0
@@ -86,15 +88,19 @@ class RdmDevice(Thread):
         super().__init__()
         current_thread().name = "RDM Device"
         self.loop = None
+        self.rdmnet = None
 
     def run(self):
+        """Main loop for the thread"""
         asyncio.run(self.main())
 
     async def main(self):
+        """Helper function to gather required tasks"""
         self.loop = asyncio.get_running_loop()
         await asyncio.gather(self.llrpmain(), self.identify())
 
     async def llrpmain(self):
+        """Helper function to start LLRP task"""
         loop = asyncio.get_running_loop()
         protocol = await asyncllrp.listenllrp(self, loop, '192.168.3.1', self.device_descriptor)
 
@@ -112,14 +118,17 @@ class RdmDevice(Thread):
             return gethandlers.nackreturn(self, recpdu, nackcodes.nack_unknown)
 
     def newbroker(self, broker_descriptor):
-        self.rdmnet = asyncio.run_coroutine_threadsafe(asyncrdmnet.listenRDMNet(self, self.device_descriptor, broker_descriptor), self.loop)
+        """Takes a Broker Descriptor and starts a new task (thread safe)"""
+        self.rdmnet = asyncio.run_coroutine_threadsafe(asyncrdmnet.listenRDMNet(
+            self, self.device_descriptor, broker_descriptor), self.loop)
 
     def disconnectbroker(self):
+        """Cancels the running task"""
         self.rdmnet.cancel()
 
     async def identify(self):
+        """If the device is in identify state, behaves annoyingly"""
         while True:
             if self.device_descriptor.identifystatus is 0x01:
                 print("Annoying Identify Pattern")
             await asyncio.sleep(1)
-
