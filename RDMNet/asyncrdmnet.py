@@ -46,10 +46,10 @@ class AsyncRDMNet(asyncio.Protocol):
             return
         #Assuming those checks passed, let's start looking at things
         if self.buffer[22] == 0x09:
-            brokerhandlers.handle(self, data)
+            brokerhandlers.handle(self, self.buffer)
         elif self.buffer[22] == 0x05:
             print("RPT Packet")
-            rpthandlers.handle(self, data)
+            rpthandlers.handle(self, self.buffer)
         elif self.buffer[22] == 0x0B:
             print("EPT Packet - Not Implemented")
             #EPT Not yet implemented
