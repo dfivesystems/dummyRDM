@@ -1,6 +1,8 @@
 # DummyRDM #
 DummyRDM is a tool for testing various controllers within an RDM network. Transport is provided via E1.33 RDMNet, Art-Net, and LLRP
 
+[![Documentation Status](https://readthedocs.org/projects/dummyrdm/badge/?version=latest)](https://dummyrdm.readthedocs.io/en/latest/?badge=latest)
+
 ## Motivation ##
 I created this tool while developing LXNetTools as a means of creating a flexible framework for testing new device features in a fully controllable and customisable manner. 
 
