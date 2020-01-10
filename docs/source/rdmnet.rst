@@ -9,7 +9,7 @@ asyncrdmnet
 
 Broker descriptor
 -----------------
-.. automodule:: RDMnet.brokerdescription
+.. automodule:: RDMNet.brokerdescription
     :members:
 
 Broker PDU handlers
