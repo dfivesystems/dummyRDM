@@ -16,7 +16,9 @@ RDM:
     Add many more PIDS
 
 RDMNet:
-    Just, start
+    Implement broker heartbeat check
+    Implement RPT handlers
+    Implement Broker handlers
 
 LLRP:
     Make llrp request handler class based

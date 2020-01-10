@@ -16,7 +16,6 @@ class ACNTCPPreamble:
         retval.extend(self.acn_packet_id)
         retval.extend(pack('!I', self.RLP_length))
         retval.extend(messagebytes)
-        print(len(retval))
         return retval
 
 class RLPPDU:
@@ -48,6 +47,15 @@ class BrokerNull:
         retval.extend(pack('!L', self.flags_length)[1:])
         retval.extend(self.vector)
         return retval
+
+class ConnectReply:
+    def __init__(self):
+        self.flags_length = 0x000000
+        self.vector = vectors.vector_broker_connect_reply
+        self.connection_code = 0x0000
+        self.E133_vers = 0x0000
+        self.brokerUID = bytearray()
+        self.clientUID = bytearray()
 
 class ClientConnect:
     def __init__(self, scope, searchdomain, connectionflags=0x00):

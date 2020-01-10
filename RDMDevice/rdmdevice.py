@@ -78,7 +78,8 @@ class RdmDevice(Thread):
         pids.RDM_sensor_definition: gethandlers.sensordef,
         pids.RDM_sensor_value: gethandlers.sensorval,
         #Personalities
-        #
+        #Queued Message
+        #Status Message
     }
 
     def __init__(self):
