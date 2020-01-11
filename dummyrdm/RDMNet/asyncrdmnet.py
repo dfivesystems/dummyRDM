@@ -63,28 +63,31 @@ class AsyncRDMNet(asyncio.Protocol):
 
     def data_received(self, data):
         #Decode RDMNet Packet
+        #TODO: Allow support for multiple RLP blocks
         self.buffer.extend(data)
         if self.buffer[:12] != vectors.ACNheader:
             print("Incorrect ACN Header")
             self.buffer.clear()
             return
-        if unpack("!L", self.buffer[12:16])[0] != len(self.buffer[16:]):
+        if unpack("!L", self.buffer[12:16])[0] >= len(self.buffer[16:]):
             #Read the remaining buffer
+            print("Requesting further data")
             self.transport.resume_reading()
             return
         #Assuming those checks passed, let's start looking at things
         if self.buffer[22] == 0x09:
-            brokerhandlers.handle(self, self.buffer)
+            brokerhandlers.handle(self, self.buffer[:])
         elif self.buffer[22] == 0x05:
-            print("RPT Packet")
-            rpthandlers.handle(self, self.buffer)
+            rpthandlers.handle(self, self.buffer[:])
         elif self.buffer[22] == 0x0B:
             print("EPT Packet - Not Implemented")
             #EPT Not yet implemented
         else:
             print("Unrecognised Packet")
         #Clear the buffer for next use
-        self.buffer.clear()
+        print("Clearing buffer")
+        self.buffer = bytearray()
+        return
 
     def connection_lost(self, exc):
         print('The broker closed the connection')
@@ -141,3 +144,5 @@ async def listenRDMNet(self, device_descriptor, broker_descriptor):
         await on_con_lost
     finally:
         transport.close()
+
+

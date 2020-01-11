@@ -8,27 +8,80 @@ form, including the RLP preamble and RLP PDU.
 
 """
 
-from RDMNet import vectors
+from RDMNet import vectors, pdus
+from RDM import rdmpacket, gethandlers, nackcodes
 
-def handle(self, data):
-    """Switches handler based on RPT PDU vector."""
-    if data[42:46] == vectors.vector_rpt_request:
-        rptrequest(self, data)
-    elif data[42:46] == vectors.vector_rpt_status:
-        rptstatus(self, data)
-    elif data[42:46] == vectors.vector_rpt_notification:
-        rptnotification(self, data)
-    else:
-        print("Unrecongnised RPT Vector")
+def handle(self, data: bytearray) -> None:
+    """Switches handler based on RPT PDU vector.
 
-def rptrequest(self, data):
-    """Processes an RPT Request PDU"""
+    There may be multiple RPT PDUS enclosed within the RLP Data segment
+    """
     print("RPT Request")
+    #Strip the RLP PDU from data
+    data = data[39:]
+    #Loop through the remaining PDUs
+    while len(data) > 0:
+        length = (data[0] << 16) | (data[1] << 8) | data[2]
+        pdudata = data[:length]
+        if pdudata[3:7] == vectors.vector_rpt_request:
+            rptrequest(self, pdudata)
+        elif pdudata[3:7] == vectors.vector_rpt_status:
+            rptstatus(self, pdudata)
+        elif pdudata[3:7] == vectors.vector_rpt_notification:
+            rptnotification(self, pdudata)
+        else:
+            print("Unrecognised RPT Vector")
+        data = data[length:]
+    print("All PDUs processed")
 
-def rptstatus(self, data):
+def rptrequest(self, data: bytearray) -> None:
+    """Processes an RPT Request PDU.
+
+    RPT Request PDUs can only contain ONE RDM payload.
+    """
+    #TODO: Handle invalid data
+
+    sourceuid = data[7:13]
+    sourceendpoint = data[13:15]
+    destuid = data[15:21]
+    destendpoint = data[21]
+    sequence = data[23:27]
+    payload = rdmpacket.RDMpacket()
+    payload.fromart(data[39:])
+    retpacket = rdmpacket.RDMpacket()
+    func = self.device_descriptor.llrpswitcher.get(payload.pid, "NACK")
+    if func is "NACK":
+        func = self.device_descriptor.getswitcher.get(payload.pid, "NACK")
+    if func is not "NACK":
+        retpacket = func(self, payload)
+    else:
+        retpacket = gethandlers.nackreturn(self, payload, nackcodes.nack_unknown)
+
+    # Now we have a RDMPacket - add that to a notification PDU and return to sender
+    packet = pdus.ACNTCPPreamble()
+    rlppacket = pdus.RLPPDU(vectors.vector_root_rpt, self.device_descriptor.cid)
+    rptpacket = pdus.RptPdu(vectors.vector_rpt_notification, sourceuid,
+                            sourceendpoint, destuid, destendpoint, sequence)
+    notifpacket = pdus.RPTNotificationPDU()
+    cmdpacket = pdus.RDMCommandPDU()
+
+    cmdpacket.message = retpacket
+    notifpacket.message = cmdpacket
+    rptpacket.message = notifpacket
+    rlppacket.message = rptpacket
+
+    retval = rlppacket.serialise()
+
+    self.transport.write(retval)
+    return
+
+def rptstatus(self, data: bytearray) -> None:
     """Processes an RPT Status PDU"""
     print("RPT Status")
 
-def rptnotification(self, data):
-    """Processes an RPT Notification PDU"""
+def rptnotification(self, data: bytearray) -> None:
+    """Processes an RPT Notification PDU
+
+    RPT Notification PDUs contain multiple RDM Command PDUs
+    """
     print("RPT Notification")

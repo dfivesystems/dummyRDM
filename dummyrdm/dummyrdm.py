@@ -12,7 +12,7 @@ def dummyrdm():
     zeroconf = Zeroconf()
     listener = zconflistener.ZConfListener(devicestore)
     browser = ServiceBrowser(zeroconf, "_rdmnet._tcp.local.", listener)
-    artnetengine = artnet.dummyartnode("192.168.3.1/24", devicestore, 0, 14)
+    artnetengine = artnet.dummyartnode("192.168.3.2/24", devicestore, 0, 14)
     artnetengine.start()
     devicestore[0] = rdmdevice.RdmDevice()
     devicestore[0].start()

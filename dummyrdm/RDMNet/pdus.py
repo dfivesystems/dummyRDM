@@ -8,6 +8,7 @@ Todo:
 """
 from struct import pack
 from RDMNet import vectors
+from RDM import rdmpacket
 #from RDM import rdmpacket
 
 class ACNTCPPreamble:
@@ -126,4 +127,70 @@ class ClientEntry:
         retval.extend(self.UID)
         retval.extend(pack('!B', self.RPTClientType))
         retval.extend(self.bindingCID)
+        return retval
+
+class RptPdu:
+    """Container for an RPT PDU"""
+    def __init__(self, vector, destuid, destendpoint, srcuid, srcendpoint, sequence):
+        self.flags_length = 0xF0001B
+        self.vector = bytes()
+        self.sourceUID = bytes()
+        self.sourceendpoint = bytes()
+        self.destUID = bytes()
+        self.destendpoint = bytes()
+        self.sequence = bytes()
+        self.reserved = bytes(0x00)
+        self.message = None
+
+    def serialise(self):
+        """Serialises the PDU, including any nested PDUs"""
+        #Calculate all sub messages before amending lengths
+        retval = bytearray()
+        messagebytes = self.message.serialise()
+        self.flags_length += (len(messagebytes))
+        retval.extend(pack('!L', self.flags_length)[1:])
+        retval.extend(self.vector)
+        retval.extend(self.sourceUID)
+        retval.extend(self.sourceendpoint)
+        retval.extend(self.destUID)
+        retval.extend(self.destendpoint)
+        retval.extend(self.sequence)
+        retval.extend(self.reserved)
+        retval.extend(messagebytes)
+        return retval
+
+class RPTNotificationPDU:
+    """Container for an RPT Notification PDU"""
+    def __init__(self):
+        self.flags_length = 0xF00007
+        self.vector = vectors.vector_notification_rdm_cmd
+        self.message = None
+
+    def serialise(self):
+        """Serialises the PDU, including any nested PDUs"""
+        #Calculate all sub messages before amending lengths
+        retval = bytearray()
+        messagebytes = self.message.serialise()
+        self.flags_length += (len(messagebytes))
+        retval.extend(pack('!L', self.flags_length)[1:])
+        retval.extend(self.vector)
+        retval.extend(messagebytes)
+        return retval
+
+class RDMCommandPDU:
+    """Container for an RDM Command PDU"""
+    def __init__(self):
+        self.flags_length = 0xF00004
+        self.vector = vectors.vector_notification_rdm_cmd
+        self.message = rdmpacket.RDMpacket()
+
+    def serialise(self):
+        """Serialises the PDU, including any nested PDUs"""
+        #Calculate all sub messages before amending lengths
+        retval = bytearray()
+        messagebytes = self.message.artserialise()
+        self.flags_length += (len(messagebytes))
+        retval.extend(pack('!L', self.flags_length)[1:])
+        retval.extend(self.vector)
+        retval.extend(messagebytes)
         return retval

@@ -48,7 +48,7 @@ vector_rpt_status_unknown_vector = b'\x00\x07'
 vector_rpt_status_invalid_message = b'\x00\x08'
 vector_rpt_status_invalid_command_class = b'\x00\x09'
 
-vector_notification_rdm_cmd = b'\x01'
+vector_notification_rdm_cmd = b'\x00\x00\x00\x01'
 
 vector_rdm_cmd_rdm_data = b'\xCC'
 

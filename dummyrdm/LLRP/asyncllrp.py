@@ -58,7 +58,6 @@ class AsyncLLRP(DatagramProtocol):
         return sock
 
     def datagram_received(self, data, addr):
-        print("Reply from {}: {!r}".format(addr, data))
         llrp.handlellrp(self, data)
 
     def disconnect(self) -> None:

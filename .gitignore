@@ -8,3 +8,5 @@
 *.code-workspace
 
 venv/
+
+docs/build

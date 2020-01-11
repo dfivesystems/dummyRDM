@@ -3,7 +3,7 @@ import socket
 import ipaddress
 from struct import unpack
 from threading import Thread, current_thread
-from ArtNet import opcodes, packets, handlers, ports
+from ArtNet import opcodes, handlers, ports
 
 class dummyartnode(Thread):
     """Class Implementing an Art-Net Node, capable of emulating devices on a single port"""
@@ -22,7 +22,6 @@ class dummyartnode(Thread):
         """Initialise the Art-Net Node with a hostaddress(CIDR notation), startuniverse(optional) and port count(optional)"""
 
         super().__init__()
-        current_thread().name = "Art-Net Engine"
         self.devicestore = devicestore
         self.HOST = ipaddress.IPv4Interface(hostaddress)
         self.startuniverse = startuniverse
@@ -55,7 +54,8 @@ class dummyartnode(Thread):
 
     def run(self):
         """Main Method for running a dummyartnode in a separate thread"""
-
+        
+        current_thread().name = "Art-Net Engine"
         while True:
             data, addr = self.artnetsocket.recvfrom(1024)
             packet = self.packethandler(data)

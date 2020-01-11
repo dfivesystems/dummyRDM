@@ -102,7 +102,7 @@ class RdmDevice(Thread):
     async def llrpmain(self):
         """Helper function to start LLRP task"""
         loop = asyncio.get_running_loop()
-        protocol = await asyncllrp.listenllrp(self, loop, '192.168.3.1', self.device_descriptor)
+        protocol = await asyncllrp.listenllrp(self, loop, '192.168.3.2', self.device_descriptor)
 
     def getpid(self, pid, recpdu) -> rdmpacket.RDMpacket:
         """Checks to see if either the LLRP PIDS or the RDM-only PIDS contains the
