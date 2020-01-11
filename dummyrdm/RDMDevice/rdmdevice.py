@@ -119,8 +119,8 @@ class RdmDevice(Thread):
 
     def newbroker(self, broker_descriptor):
         """Takes a Broker Descriptor and starts a new task (thread safe)"""
-        self.rdmnet = asyncio.run_coroutine_threadsafe(asyncrdmnet.listenRDMNet(
-            self, self.device_descriptor, broker_descriptor), self.loop)
+        self.rdmnet = asyncio.run_coroutine_threadsafe(asyncrdmnet.AsyncRDMNet(self.device_descriptor).listenRDMNetstreams(
+            broker_descriptor), self.loop)
 
     def disconnectbroker(self):
         """Cancels the running task"""
