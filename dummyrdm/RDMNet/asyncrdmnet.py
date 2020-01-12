@@ -64,6 +64,9 @@ class AsyncRDMNet():
             #TODO: Allow support for multiple RLP blocks
             #Read in 16 bytes for the TCP Preamble
             data = await self.reader.read(16)
+            if self.reader.at_eof():
+                print("Broker Disconnect")
+                break
             if data[:12] != vectors.ACNheader:
                 print("Incorrect ACN Header")
                 continue
@@ -74,13 +77,13 @@ class AsyncRDMNet():
             if rlpdata[6] == 0x09:
                 brokerhandlers.handle(self, rlpdata[:])
             elif rlpdata[6] == 0x05:
-                rpthandlers.handle(self, rlpdata[:])
+                await rpthandlers.handle(self, rlpdata[:])
             elif rlpdata[6] == 0x0B:
                 print("EPT Packet - Not Implemented")
                 #EPT Not yet implemented
             else:
                 print("Unrecognised RLP Vector")
-            await self.writer.drain()
+        self.heartbeat.cancel()
         self.writer.close()
 
     async def sendtcpheartbeat(self):

@@ -7,11 +7,11 @@ It is expected that data will be passed to these handlers in their full
 form, including the RLP preamble and RLP PDU.
 
 """
-
+import hexdump
 from RDMNet import vectors, pdus
 from RDM import rdmpacket, gethandlers, nackcodes
 
-def handle(self, data: bytearray) -> None:
+async def handle(self, data: bytearray) -> None:
     """Switches handler based on RPT PDU vector.
 
     There may be multiple RPT PDUS enclosed within the RLP Data segment
@@ -23,7 +23,7 @@ def handle(self, data: bytearray) -> None:
     length = (data[0] << 16) | (data[1] << 8) | data[2]
     pdudata = data[:length]
     if pdudata[3:7] == vectors.vector_rpt_request:
-        rptrequest(self, pdudata[:])
+        await rptrequest(self, pdudata[:])
     elif pdudata[3:7] == vectors.vector_rpt_status:
         rptstatus(self, pdudata)
     elif pdudata[3:7] == vectors.vector_rpt_notification:
@@ -33,7 +33,7 @@ def handle(self, data: bytearray) -> None:
     data = data[length:]
     print("All PDUs processed")
 
-def rptrequest(self, data: bytearray) -> None:
+async def rptrequest(self, data: bytearray) -> None:
     """Processes an RPT Request PDU.
 
     RPT Request PDUs can only contain ONE RDM payload.
@@ -64,13 +64,18 @@ def rptrequest(self, data: bytearray) -> None:
     notifpacket = pdus.RPTNotificationPDU()
     cmdpacket = pdus.RDMCommandPDU()
 
+    print("PID {:04x}".format(payload.pid))
     cmdpacket.message = retpacket
     notifpacket.message = cmdpacket
     rptpacket.message = notifpacket
     rlppacket.message = rptpacket
     packet.message = rlppacket
     retval = packet.serialise()
+    print("Total Length: {}".format(len(retval)))
+    if payload.pid == 0x00f0:
+        hexdump.hexdump(retval)
     self.writer.write(retval)
+    await self.writer.drain()
 
 
 def rptstatus(self, data: bytearray) -> None:

@@ -2,6 +2,7 @@
 from struct import unpack, pack
 from RDM import rdmpacket, defines, nackcodes
 
+
 #TODO: Personality Descriptions, Parameter Description
 
 def devreset(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
