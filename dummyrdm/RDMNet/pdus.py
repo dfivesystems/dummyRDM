@@ -21,7 +21,7 @@ class ACNTCPPreamble:
         #Calculate all sub messages before ammending lengths
         retval = bytearray()
         messagebytes = self.message.serialise()
-        print("TCP RLP Length:{:06x}".format(self.RLP_length))
+        self.RLP_length += (len(messagebytes))
         retval.extend(self.acn_packet_id)
         retval.extend(pack('!I', self.RLP_length))
         retval.extend(messagebytes)
@@ -169,7 +169,7 @@ class RPTNotificationPDU:
         #Calculate all sub messages before amending lengths
         retval = bytearray()
         messagebytes = self.message.serialise()
-        print("Notification Length: {:06x}".format(self.flags_length))
+        self.flags_length += len(messagebytes)
         retval.extend(pack('!L', self.flags_length)[1:])
         retval.extend(self.vector)
         retval.extend(messagebytes)
@@ -187,8 +187,7 @@ class RDMCommandPDU:
         #Calculate all sub messages before amending lengths
         retval = bytearray()
         messagebytes = self.message.artserialise()
-        print("RDM Serialised length: {}".format(len(messagebytes)))
-        print("Command Length: {:06x}".format(self.flags_length))
+        self.flags_length += len(messagebytes)
         retval.extend(pack('!L', self.flags_length)[1:])
         retval.extend(bytes(b'\xCC'))
         retval.extend(messagebytes)

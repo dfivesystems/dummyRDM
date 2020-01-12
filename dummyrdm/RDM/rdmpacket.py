@@ -5,18 +5,18 @@ class RDMpacket:
     def __init__(self):
         self.startcode = 0xcc
         self.ssc = 0x01
-        self.length = bytes(b'\x00')
+        self.length = 0x00
         self.destuid = bytes(b'\x00'*6)
         self.srcuid = bytes(b'\x00'*6)
-        self.tn = bytes(b'\x00')
-        self.port_resp = bytes(b'\x00')
-        self.mess_cnt = bytes(b'\x00')
-        self.sub_id = bytes(b'\x00')
-        self.cc = bytes(b'\x00')
-        self.pid = bytes(b'\x00\x00')
-        self.pdl = bytes(b'\x00')
+        self.tn = 0x00
+        self.port_resp = 0x00
+        self.mess_cnt = 0x00
+        self.sub_id = 0x0000
+        self.cc = 0x00
+        self.pid = 0x0000
+        self.pdl = 0x00
         self.pd = bytearray()
-        self.checksum = bytes(b'\x00\x00')
+        self.checksum = 0x0000
 
     def artserialise(self):
         retval = bytearray()
