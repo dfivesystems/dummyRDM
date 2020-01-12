@@ -8,8 +8,6 @@ Todo:
 """
 from struct import pack
 from RDMNet import vectors
-from RDM import rdmpacket
-#from RDM import rdmpacket
 
 class ACNTCPPreamble:
     """Container for ACNTCPPreamble data"""
@@ -23,7 +21,7 @@ class ACNTCPPreamble:
         #Calculate all sub messages before ammending lengths
         retval = bytearray()
         messagebytes = self.message.serialise()
-        self.RLP_length += (len(messagebytes))
+        print("TCP RLP Length:{:06x}".format(self.RLP_length))
         retval.extend(self.acn_packet_id)
         retval.extend(pack('!I', self.RLP_length))
         retval.extend(messagebytes)
@@ -132,13 +130,13 @@ class ClientEntry:
 class RptPdu:
     """Container for an RPT PDU"""
     def __init__(self, vector, destuid, destendpoint, srcuid, srcendpoint, sequence):
-        self.flags_length = 0xF0001B
-        self.vector = bytes()
-        self.sourceUID = bytes()
-        self.sourceendpoint = bytes()
-        self.destUID = bytes()
-        self.destendpoint = bytes()
-        self.sequence = bytes()
+        self.flags_length = 0xF0001C
+        self.vector = vector
+        self.srcUID = srcuid
+        self.srcendpoint = srcendpoint
+        self.dstUID = destuid
+        self.dstendpoint = destendpoint
+        self.sequence = sequence
         self.reserved = bytes(0x00)
         self.message = None
 
@@ -150,12 +148,12 @@ class RptPdu:
         self.flags_length += (len(messagebytes))
         retval.extend(pack('!L', self.flags_length)[1:])
         retval.extend(self.vector)
-        retval.extend(self.sourceUID)
-        retval.extend(self.sourceendpoint)
-        retval.extend(self.destUID)
-        retval.extend(self.destendpoint)
+        retval.extend(self.srcUID)
+        retval.extend(self.srcendpoint)
+        retval.extend(self.dstUID)
+        retval.extend(self.dstendpoint)
         retval.extend(self.sequence)
-        retval.extend(self.reserved)
+        retval.extend(bytes('\x00', 'utf-8'))
         retval.extend(messagebytes)
         return retval
 
@@ -171,7 +169,7 @@ class RPTNotificationPDU:
         #Calculate all sub messages before amending lengths
         retval = bytearray()
         messagebytes = self.message.serialise()
-        self.flags_length += (len(messagebytes))
+        print("Notification Length: {:06x}".format(self.flags_length))
         retval.extend(pack('!L', self.flags_length)[1:])
         retval.extend(self.vector)
         retval.extend(messagebytes)
@@ -182,15 +180,16 @@ class RDMCommandPDU:
     def __init__(self):
         self.flags_length = 0xF00004
         self.vector = vectors.vector_notification_rdm_cmd
-        self.message = rdmpacket.RDMpacket()
+        self.message = None
 
     def serialise(self):
         """Serialises the PDU, including any nested PDUs"""
         #Calculate all sub messages before amending lengths
         retval = bytearray()
         messagebytes = self.message.artserialise()
-        self.flags_length += (len(messagebytes))
+        print("RDM Serialised length: {}".format(len(messagebytes)))
+        print("Command Length: {:06x}".format(self.flags_length))
         retval.extend(pack('!L', self.flags_length)[1:])
-        retval.extend(self.vector)
+        retval.extend(bytes(b'\xCC'))
         retval.extend(messagebytes)
         return retval

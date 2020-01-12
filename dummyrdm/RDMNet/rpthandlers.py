@@ -7,48 +7,47 @@ It is expected that data will be passed to these handlers in their full
 form, including the RLP preamble and RLP PDU.
 
 """
-
+import hexdump
 from RDMNet import vectors, pdus
 from RDM import rdmpacket, gethandlers, nackcodes
 
-def handle(self, data: bytearray) -> None:
+async def handle(self, data: bytearray) -> None:
     """Switches handler based on RPT PDU vector.
 
     There may be multiple RPT PDUS enclosed within the RLP Data segment
     """
-    print("RPT Request")
+    print("RPT PDU")
     #Strip the RLP PDU from data
-    data = data[39:]
+    data = data[23:]
     #Loop through the remaining PDUs
-    while len(data) > 0:
-        length = (data[0] << 16) | (data[1] << 8) | data[2]
-        pdudata = data[:length]
-        if pdudata[3:7] == vectors.vector_rpt_request:
-            rptrequest(self, pdudata)
-        elif pdudata[3:7] == vectors.vector_rpt_status:
-            rptstatus(self, pdudata)
-        elif pdudata[3:7] == vectors.vector_rpt_notification:
-            rptnotification(self, pdudata)
-        else:
-            print("Unrecognised RPT Vector")
-        data = data[length:]
+    length = (data[0] << 16) | (data[1] << 8) | data[2]
+    pdudata = data[:length]
+    if pdudata[3:7] == vectors.vector_rpt_request:
+        await rptrequest(self, pdudata[:])
+    elif pdudata[3:7] == vectors.vector_rpt_status:
+        rptstatus(self, pdudata)
+    elif pdudata[3:7] == vectors.vector_rpt_notification:
+        rptnotification(self, pdudata)
+    else:
+        print("Unrecognised RPT Vector")
+    data = data[length:]
     print("All PDUs processed")
 
-def rptrequest(self, data: bytearray) -> None:
+async def rptrequest(self, data: bytearray) -> None:
     """Processes an RPT Request PDU.
 
     RPT Request PDUs can only contain ONE RDM payload.
     """
     #TODO: Handle invalid data
-
+    print("RPT Request")
     sourceuid = data[7:13]
     sourceendpoint = data[13:15]
     destuid = data[15:21]
-    destendpoint = data[21]
+    destendpoint = data[21:23]
     sequence = data[23:27]
     payload = rdmpacket.RDMpacket()
     payload.fromart(data[39:])
-    retpacket = rdmpacket.RDMpacket()
+    retpacket = None
     func = self.device_descriptor.llrpswitcher.get(payload.pid, "NACK")
     if func is "NACK":
         func = self.device_descriptor.getswitcher.get(payload.pid, "NACK")
@@ -65,15 +64,19 @@ def rptrequest(self, data: bytearray) -> None:
     notifpacket = pdus.RPTNotificationPDU()
     cmdpacket = pdus.RDMCommandPDU()
 
+    print("PID {:04x}".format(payload.pid))
     cmdpacket.message = retpacket
     notifpacket.message = cmdpacket
     rptpacket.message = notifpacket
     rlppacket.message = rptpacket
+    packet.message = rlppacket
+    retval = packet.serialise()
+    print("Total Length: {}".format(len(retval)))
+    if payload.pid == 0x00f0:
+        hexdump.hexdump(retval)
+    self.writer.write(retval)
+    await self.writer.drain()
 
-    retval = rlppacket.serialise()
-
-    self.transport.write(retval)
-    return
 
 def rptstatus(self, data: bytearray) -> None:
     """Processes an RPT Status PDU"""
