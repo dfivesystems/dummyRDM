@@ -15,7 +15,7 @@ def devreset(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         if recpdu.pd[0] == 0x01:
             #Warm Reset
             print("Device {}: Warm reset requested".format(self.device_descriptor.uid.hex()))
-        elif recpdu[1] == 0xFF:
+        elif recpdu.pd[0] == 0xFF:
             #Cold Reset
             print("Device {}: Cold reset requested".format(self.device_descriptor.uid.hex()))
         else:
@@ -43,7 +43,7 @@ def devfactory(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
     RDM_GET = yes
     RDM_SET = yes
     """
-#BUG: Currently Returning with incorrect checksum - needs verification
+    #BUG: Currently Returning with incorrect checksum - needs verification
     if recpdu.cc == defines.CC_Get_command:
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 25
@@ -60,24 +60,20 @@ def devfactory(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         sendpdu.calcchecksum()
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
-        if recpdu.pd[0] <= 1:
-            print("Device {}: Factory Reset set to {:02x}".format(self.uid.hex(), recpdu.pd[0]))
-            sendpdu = rdmpacket.RDMpacket()
-            sendpdu.length = 24
-            sendpdu.destuid = recpdu.srcuid
-            sendpdu.srcuid = self.device_descriptor.uid
-            sendpdu.tn = recpdu.tn
-            sendpdu.port_resp = 0x00
-            sendpdu.mess_cnt = 0x00
-            sendpdu.sub_id = 0x0000
-            sendpdu.cc = defines.CC_Set_command_resp
-            sendpdu.pid = recpdu.pid
-            sendpdu.pdl = 0
-            sendpdu.calcchecksum()
-            return sendpdu
-        else:
-            #Out of range NACK
-            return nackreturn(self, recpdu, nackcodes.nack_data_range)
+        print("Device {}: Factory Reset".format(self.device_descriptor.uid.hex()))
+        sendpdu = rdmpacket.RDMpacket()
+        sendpdu.length = 24
+        sendpdu.destuid = recpdu.srcuid
+        sendpdu.srcuid = self.device_descriptor.uid
+        sendpdu.tn = recpdu.tn
+        sendpdu.port_resp = 0x00
+        sendpdu.mess_cnt = 0x00
+        sendpdu.sub_id = 0x0000
+        sendpdu.cc = defines.CC_Set_command_resp
+        sendpdu.pid = recpdu.pid
+        sendpdu.pdl = 0
+        sendpdu.calcchecksum()
+        return sendpdu
     else:
         return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
 
@@ -467,6 +463,88 @@ def powercycles(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
         return sendpdu
     elif recpdu.cc == defines.CC_Set_command:
         self.device_descriptor.powercycles = unpack('!L', recpdu.pd[0:4])[0]
+        sendpdu = rdmpacket.RDMpacket()
+        sendpdu.length = 24
+        sendpdu.destuid = recpdu.srcuid
+        sendpdu.srcuid = self.device_descriptor.uid
+        sendpdu.tn = recpdu.tn
+        sendpdu.port_resp = 0x00
+        sendpdu.mess_cnt = 0x00
+        sendpdu.sub_id = 0x0000
+        sendpdu.cc = defines.CC_Set_command_resp
+        sendpdu.pid = recpdu.pid
+        sendpdu.pdl = 0
+        sendpdu.calcchecksum()
+    else:
+        return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
+
+def lampstatus(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
+    """Returns an rdmpacket containing the lamp status as a unsigned char
+    for the given device
+    RDM_GET = yes
+    RDM_SET = yes
+    """
+
+    if recpdu.cc == defines.CC_Get_command:
+        sendpdu = rdmpacket.RDMpacket()
+        sendpdu.length = 0x1c
+        sendpdu.destuid = recpdu.srcuid
+        sendpdu.srcuid = self.device_descriptor.uid
+        sendpdu.tn = recpdu.tn
+        sendpdu.port_resp = 0x00
+        sendpdu.mess_cnt = 0x00
+        sendpdu.sub_id = 0x0000
+        sendpdu.cc = 0x21
+        sendpdu.pid = 0x0405
+        sendpdu.pdl = 0x04
+        sendpdu.pd = self.device_descriptor.lampstatus.to_bytes(1, 'big')
+        sendpdu.calcchecksum()
+        return sendpdu
+    elif recpdu.cc == defines.CC_Set_command:
+        self.device_descriptor.lampstatus = unpack('!B', recpdu.pd[0])[0]
+        print("Device {}: Lamp State set to: {}".format(self.device_descriptor.uid.hex(),
+                                                        self.device_descriptor.lampstatus))
+        sendpdu = rdmpacket.RDMpacket()
+        sendpdu.length = 24
+        sendpdu.destuid = recpdu.srcuid
+        sendpdu.srcuid = self.device_descriptor.uid
+        sendpdu.tn = recpdu.tn
+        sendpdu.port_resp = 0x00
+        sendpdu.mess_cnt = 0x00
+        sendpdu.sub_id = 0x0000
+        sendpdu.cc = defines.CC_Set_command_resp
+        sendpdu.pid = recpdu.pid
+        sendpdu.pdl = 0
+        sendpdu.calcchecksum()
+    else:
+        return nackreturn(self, recpdu, nackcodes.nack_unsupported_cc)
+
+def lamppowerstate(self, recpdu: rdmpacket.RDMpacket) -> rdmpacket.RDMpacket:
+    """Returns an rdmpacket containing the lamp sate on power on
+    as a unsigned char for the given device
+    RDM_GET = yes
+    RDM_SET = yes
+    """
+
+    if recpdu.cc == defines.CC_Get_command:
+        sendpdu = rdmpacket.RDMpacket()
+        sendpdu.length = 0x1c
+        sendpdu.destuid = recpdu.srcuid
+        sendpdu.srcuid = self.device_descriptor.uid
+        sendpdu.tn = recpdu.tn
+        sendpdu.port_resp = 0x00
+        sendpdu.mess_cnt = 0x00
+        sendpdu.sub_id = 0x0000
+        sendpdu.cc = 0x21
+        sendpdu.pid = 0x0405
+        sendpdu.pdl = 0x04
+        sendpdu.pd = self.device_descriptor.lamppowerstate.to_bytes(1, 'big')
+        sendpdu.calcchecksum()
+        return sendpdu
+    elif recpdu.cc == defines.CC_Set_command:
+        self.device_descriptor.lamppowerstate = unpack('!B', recpdu.pd[0])[0]
+        print("Device {}: Lamp Power State set to: {}".format(self.device_descriptor.uid.hex(),
+                                                              self.device_descriptor.lamppowerstatus))
         sendpdu = rdmpacket.RDMpacket()
         sendpdu.length = 24
         sendpdu.destuid = recpdu.srcuid

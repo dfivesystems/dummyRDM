@@ -79,6 +79,8 @@ class RdmDevice(Thread):
         pids.RDM_supported_parameters: gethandlers.supportedpids,
         pids.RDM_sensor_definition: gethandlers.sensordef,
         pids.RDM_sensor_value: gethandlers.sensorval,
+        pids.RDM_lamp_on_mode: gethandlers.lamppowerstate,
+        pids.RDM_lamp_state: gethandlers.lampstatus,
         #Personalities
         #Queued Message
         #Status Message

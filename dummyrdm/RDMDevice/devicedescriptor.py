@@ -25,6 +25,8 @@ class DeviceDescriptor:
         self.lampstrikes = 1
         self.devhours = 1
         self.powercycles = 1
+        self.lampstate = 0
+        self.lamppowerstate = 0
         
         #LLRP/RDMNet Details
         self.hwaddr = ""
